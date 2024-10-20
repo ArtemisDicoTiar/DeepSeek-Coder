@@ -315,6 +315,35 @@ cd finetune && deepspeed finetune_deepseekcoder.py \
     --bf16 True
 ```
 
+### 5-1. Full-FT
+```bash
+DATA_PATH=/workspace/DeepSeek-Coder/data/rombodawg/MegaCodeTraining/java.jsonl;
+OUTPUT_PATH=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-instruct/java;
+MODEL_PATH="deepseek-ai/deepseek-coder-6.7b-instruct";
+CUDA_VISIBLE_DEVICES=0,1,2,3;
+deepspeed finetune_deepseekcoder.py \
+    --model_name_or_path $MODEL_PATH \
+    --data_path $DATA_PATH \
+    --output_dir $OUTPUT_PATH \
+    --num_train_epochs 3 \
+    --model_max_length 1024 \
+    --per_device_train_batch_size 1 \
+    --per_device_eval_batch_size 1 \
+    --gradient_accumulation_steps 8 \
+    --evaluation_strategy "no" \
+    --save_strategy "epoch" \
+    --save_steps 100 \
+    --save_total_limit 100 \
+    --learning_rate 2e-5 \
+    --warmup_steps 10 \
+    --logging_steps 1 \
+    --lr_scheduler_type "cosine" \
+    --gradient_checkpointing True \
+    --report_to "wandb" \
+    --deepspeed configs/ds_config_zero3.json \
+    --fp16 True
+```
+
 ### 6. Detailed Evaluation Results
 
 The reproducible code for the following evaluation results can be found in the [Evaluation](https://github.com/deepseek-ai/deepseek-coder/tree/main/Evaluation) directory.
