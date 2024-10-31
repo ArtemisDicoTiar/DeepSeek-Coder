@@ -11,7 +11,7 @@
 ### 1. Introduction of DeepSeek Coder
 
 DeepSeek Coder is composed of a series of code language models, each trained from scratch on 2T tokens, with a composition of 87% code and 13% natural language in both English and Chinese. We provide various sizes of the code model, ranging from 1B to 33B versions. Each model is pre-trained on project-level code corpus by employing a window size of 16K and an extra fill-in-the-blank task, to support project-level code completion and infilling. For coding capabilities, DeepSeek Coder achieves state-of-the-art performance among open-source code models on multiple programming languages and various benchmarks.
-
+ 
 <p align="center">
 <img src="pictures/result.png" alt="result" width="70%">
 </p>
@@ -317,11 +317,19 @@ cd finetune && deepspeed finetune_deepseekcoder.py \
 
 ### 5-1. Full-FT
 ```bash
-DATA_PATH=/workspace/DeepSeek-Coder/data/rombodawg/MegaCodeTraining/java.jsonl;
-OUTPUT_PATH=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-instruct/java;
-MODEL_PATH="deepseek-ai/deepseek-coder-6.7b-instruct";
-CUDA_VISIBLE_DEVICES=0,1,2,3;
-deepspeed finetune_deepseekcoder.py \
+
+
+# java cpp php swift // rust go // scala typescript dart
+
+
+LANGUAGE=scala
+DATA_PATH=/workspace/DeepSeek-Coder/data/rombodawg/MegaCodeTraining/$LANGUAGE.jsonl 
+OUTPUT_PATH=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-instruct/$LANGUAGE 
+MODEL_PATH="deepseek-ai/deepseek-coder-6.7b-instruct" 
+deepspeed \
+    --include localhost:3 \
+    --master_port 60003 \
+finetune_deepseekcoder.py \
     --model_name_or_path $MODEL_PATH \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
@@ -329,7 +337,6 @@ deepspeed finetune_deepseekcoder.py \
     --model_max_length 1024 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 8 \
     --evaluation_strategy "no" \
     --save_strategy "epoch" \
     --save_steps 100 \
@@ -341,7 +348,36 @@ deepspeed finetune_deepseekcoder.py \
     --gradient_checkpointing True \
     --report_to "wandb" \
     --deepspeed configs/ds_config_zero3.json \
-    --fp16 True
+    --bf16 True
+    
+    
+LANGUAGE=scala
+DATA_PATH=/workspace/DeepSeek-Coder/data/rombodawg/MegaCodeTraining/$LANGUAGE.jsonl 
+OUTPUT_PATH=/data/DeepSeek-Coder/experiments/deepseek-coder-6.7b-instruct/$LANGUAGE 
+MODEL_PATH="deepseek-ai/deepseek-coder-6.7b-instruct" 
+deepspeed \
+    --include localhost:3 \
+    --master_port 60003 \
+finetune_deepseekcoder.py \
+    --model_name_or_path $MODEL_PATH \
+    --data_path $DATA_PATH \
+    --output_dir $OUTPUT_PATH \
+    --num_train_epochs 3 \
+    --model_max_length 1024 \
+    --per_device_train_batch_size 1 \
+    --per_device_eval_batch_size 1 \
+    --evaluation_strategy "no" \
+    --save_strategy "epoch" \
+    --save_steps 100 \
+    --save_total_limit 100 \
+    --learning_rate 2e-5 \
+    --warmup_steps 10 \
+    --logging_steps 1 \
+    --lr_scheduler_type "cosine" \
+    --gradient_checkpointing True \
+    --report_to "wandb" \
+    --deepspeed configs/ds_config_zero1.json \
+    --bf16 True
 ```
 
 ### 6. Detailed Evaluation Results
@@ -469,3 +505,9 @@ See the [LICENSE-CODE](LICENSE-CODE) and [LICENSE-MODEL](LICENSE-MODEL) for more
 ### 11. Contact
 
 If you have any questions, please raise an issue or contact us at [service@deepseek.com](mailto:service@deepseek.com).
+
+
+### Jongyoon
+~~~bash
+ts --gpus 1; sh ./train.sh 
+~~~
