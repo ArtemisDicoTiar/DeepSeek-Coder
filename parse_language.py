@@ -73,7 +73,7 @@ if __name__ == '__main__':
         output = row[output_key]
 
         result = re.findall(pattern, output, re.DOTALL | re.MULTILINE)
-        extracted_language = result[0] if result else None
+        extracted_language = result[0].lower() if result else None
         save_obj = {
             'instruction': instruction,
             'output': output,
