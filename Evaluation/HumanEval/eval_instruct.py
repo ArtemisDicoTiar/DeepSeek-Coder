@@ -3,11 +3,14 @@ import json
 import os
 import torch
 from pathlib import Path
+
+from datasets import load_dataset
 from tqdm import tqdm
+from wandb.sdk.internal.system.assets.open_metrics import prometheus_client_parser
 
 data_abs_dir = Path(__file__).parent / "data"
 
-from utils.utils import extract_generation_code, languge_settings
+from utils.utils import extract_generation_code, language_settings
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from human_eval.evaluation import evaluate_functional_correctness
 
@@ -20,7 +23,7 @@ Please continue to complete the function. You are not allowed to modify the give
 '''.strip().format(languge.lower(), question.strip())
 
 def generate_one(example, lang, tokenizer, model):
-    prompt = build_deepseekcoder_instruction(languge_settings[lang]['full_name'], example['prompt'])
+    prompt = build_deepseekcoder_instruction(language_settings[lang]['full_name'], example['prompt'])
     inputs = tokenizer.apply_chat_template(
         [{'role': 'user', 'content': prompt }],
         return_tensors="pt",
@@ -48,10 +51,30 @@ def generate_one(example, lang, tokenizer, model):
 def generate_main(args):
     model_name_or_path = args.model
     lang = args.language
+    task = args.task
     saved_path = args.output_path
     temp_dir = args.temp_dir
     os.makedirs(temp_dir, exist_ok=True)
-    problem_file = os.path.join(data_abs_dir, f"humaneval-{lang}.jsonl")
+    problem_file = Path(os.path.join(data_abs_dir, f"{task}-{lang}.jsonl"))
+
+    DATASET_PATH = "nuprl/MultiPL-E"
+    DATASET_NAME = f"{task}-{lang}"
+    DATASET_REVISION = "ff5c146da05f10bc69b9ce393b77f381b3825d1b"
+
+    examples = load_dataset(
+        DATASET_PATH,
+        DATASET_NAME,
+        revision=DATASET_REVISION,
+        split="test"
+    )
+    print(f"loaded dataset: {examples}")
+
+    with problem_file.open("w") as f:
+        for example in examples:
+            f.write(json.dumps(example)+"\n")
+
+    # examples = [json.loads(x) for x in open(problem_file) if x.strip()]
+    print("Read {} examples for evaluation over.".format(len(examples)))
 
     print("model", model_name_or_path)
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
@@ -63,8 +86,6 @@ def generate_main(args):
         #use_flash_attention_2=True
     )
     model.eval()
-    examples = [json.loads(x) for x in open(problem_file) if x.strip()]
-    print("Read {} examples for evaluation over.".format(len(examples)))
 
     generated_examples = []
     for ex in tqdm(examples, desc='Generating'):
@@ -82,7 +103,7 @@ def generate_main(args):
         tmp_dir=temp_dir,
         n_workers=8,
         timeout=3.0,
-        problem_file=problem_file,
+        problem_file=str(problem_file.absolute()),
         language=lang
     )
     print(lang, result, model_name_or_path)
@@ -114,14 +135,19 @@ def evaluation_only(args):
         problem_file=problem_file,
         language=lang
     )
+    with open(args.metric_path, "r") as f:
+        f.write(json.dumps(result) + "\n")
+
     print(lang, result)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, help="model name or path")
     parser.add_argument('--output_path', type=str, help="output path of your generation")
+    parser.add_argument("--task", type=str, default="humaneval")
     parser.add_argument('--language', type=str, help="langauge")
     parser.add_argument('--temp_dir', type=str, help="temp dir for evaluation", default="tmp")
+    parser.add_argument("--metric_path", type=str)
     args = parser.parse_args()
 
     os.environ["TOKENIZERS_PARALLELISM"] = "false"

@@ -146,7 +146,7 @@ def process_humaneval_test(sample, problems, example_test=False, is_mbpp=False, 
         test_string = test_set_up + "\n" + code + "\n" + test
     elif language in ["js", "javascript", "ts", "sh", "go"]:
         test_string = code + "\n" + test
-    elif language == "go232":
+    elif language == "go232" or langauge == "go":
         import_string = problems[task_id]["import"]
         prompt = prompt.replace(import_string, "")
         if example_test and "example_test" in problems[task_id]:

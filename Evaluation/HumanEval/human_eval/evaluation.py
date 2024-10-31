@@ -78,11 +78,11 @@ def read_dataset(
     """
     if num_shot is not None:
         print(f"{num_shot}-shot setting...")
-    if "humaneval" in dataset_type.lower():
+    if "humaneval" in dataset_type.lower() or "mbpp" in dataset_type.lower():
         if data_file is None:
             current_path = os.path.dirname(os.path.abspath(__file__))
             data_file = os.path.join(current_path, "..", "humaneval-x", "python", "data", "humaneval_python.jsonl.gz")
-        dataset = {task["task_id"]: task for task in stream_jsonl(data_file)}
+        dataset = {task["name"]: task for task in stream_jsonl(data_file)}
     else:
         raise f"Dataset: {dataset_type} not supported."
 
@@ -117,7 +117,7 @@ def process_humaneval_test(sample, problems, example_test=False, is_mbpp=False, 
     """
     Processes a sample for evaluation.
     """
-    task_id = sample["task_id"]
+    task_id = sample["name"]
     if is_mbpp:
         return sample["generation"] + "\n" + "\n".join(problems[task_id]["test"])
 
@@ -147,7 +147,7 @@ def process_humaneval_test(sample, problems, example_test=False, is_mbpp=False, 
         test_string = test_set_up + "\n" + code + "\n" + test
     elif language in ["js", "javascript", "ts", "sh", "go"]:
         test_string = code + "\n" + test
-    elif language == "go232":
+    elif language == "go232" or language == "go":
         import_string = problems[task_id]["import"]
         prompt = prompt.replace(import_string, "")
         if example_test and "example_test" in problems[task_id]:
@@ -206,6 +206,7 @@ def evaluate_functional_correctness(
         example_test: bool = False,
         is_mbpp: bool = False,
         language: str = "python",
+        task: str = "humaneval"
 ):
     """
     Evaluates the functional correctness of a model.
@@ -214,7 +215,7 @@ def evaluate_functional_correctness(
         print("Example test...")
 
     problems = read_dataset(problem_file,
-                            dataset_type="humaneval")
+                            dataset_type=task)
     sample_jsonl = stream_jsonl_all(input_file)
 
 
@@ -228,7 +229,7 @@ def evaluate_functional_correctness(
         if test_groundtruth:
             print("Testing ground truth...")
             for sample in tqdm(problems.values()):
-                task_id = sample["task_id"]
+                task_id = sample["name"]
                 lang = task_id.split("/")[0].lower()
                 if lang == "javascript":
                     lang = "js"
@@ -245,7 +246,7 @@ def evaluate_functional_correctness(
         else:
             print("Reading samples...")
             for sample in tqdm(sample_jsonl):
-                task_id = sample["task_id"]
+                task_id = sample["name"]
                 if not is_mbpp:
                     lang = language
                 if not is_mbpp and lang == "javascript":
@@ -253,7 +254,7 @@ def evaluate_functional_correctness(
                 if is_mbpp:
                     lang = "python"
                 tmp_dir_ = os.path.join(tmp_dir, lang, "evaluation")
-                sample["task_id"] = task_id
+                sample["name"] = task_id
                 sample["test_code"] = process_humaneval_test(sample, problems, example_test, is_mbpp, language)
                 if sample["test_code"] is None:
                     continue
@@ -275,7 +276,7 @@ def evaluate_functional_correctness(
         print("Running test suites...")
         for future in tqdm(as_completed(futures), total=len(futures)):
             result = future.result()
-            results[result["task_id"]].append((result["completion_id"], result))
+            results[result["name"]].append((result["completion_id"], result))
 
     # Calculate pass@k.
     total, correct = [], []

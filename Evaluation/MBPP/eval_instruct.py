@@ -122,7 +122,7 @@ def generate_main(args):
         input_file=saved_path,
         tmp_dir=temp_dir,
         problem_file=os.path.join(data_abs_dir, f"mbpp_test.jsonl"),
-        language='python',
+        language=args.language,
         is_mbpp=True
     )
     print(result, model_name_or_path)
@@ -131,6 +131,7 @@ def generate_main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, help="model name or path")
+    parser.add_argument("--language", type=str)
     parser.add_argument('--output_path', type=str, help="output path of your generation")
     parser.add_argument('--temp_dir', type=str, help="temp dir for evaluation", default="tmp")
     args = parser.parse_args()
