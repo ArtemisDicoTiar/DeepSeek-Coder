@@ -8,12 +8,13 @@ if __name__ == '__main__':
         theblackcat102/evol-codealpaca-v1 
         ise-uiuc/Magicoder-OSS-Instruct-75K 
         ise-uiuc/Magicoder-Evol-Instruct-110K
+        m-a-p/CodeFeedback-Filtered-Instruction
     """
 
     sample_size = 3_000
 
     total_dataset_dir = Path("/workspace/DeepSeek-Coder/data")
-    for dataset in ['rombodawg/MegaCodeTraining', 'theblackcat102/evol-codealpaca-v1', 'ise-uiuc/Magicoder-OSS-Instruct-75K', 'ise-uiuc/Magicoder-Evol-Instruct-110K']:
+    for dataset in ['rombodawg/MegaCodeTraining', 'theblackcat102/evol-codealpaca-v1', 'ise-uiuc/Magicoder-OSS-Instruct-75K', 'ise-uiuc/Magicoder-Evol-Instruct-110K', 'm-a-p/CodeFeedback-Filtered-Instruction']:
         target_dataset_file = total_dataset_dir / dataset / "python.jsonl"
         # copy target dataset file to python-original.jsonl
         try:

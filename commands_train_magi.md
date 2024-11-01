@@ -7,33 +7,40 @@ theblackcat102/evol-codealpaca-v1
 
 MAGIC_NUMBER=10
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR python 0;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR python 0 $MODEL_NAME;
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR cpp 1;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR cpp 1 $MODEL_NAME;
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR php 2;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR php 2 $MODEL_NAME;
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR swift 3;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR swift 3 $MODEL_NAME;
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4 $MODEL_NAME;
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5 $MODEL_NAME;
 
-DATA_NAME=rombodawg/MegaCodeTraining
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 6;
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 6 $MODEL_NAME;
 ```
 
 ~~~

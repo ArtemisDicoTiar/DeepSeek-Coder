@@ -10,6 +10,7 @@ echo UPLOADING ${EXPERIMENT_DIR} to
 echo DicoTiar/${MODEL_NAME}-${EXPERIMENT_NAME}-${DATASET}
 
 huggingface-cli upload-large-folder \
+  --private \
   --repo-type=dataset \
   DicoTiar/${MODEL_NAME}-${EXPERIMENT_NAME}-${DATASET} \
   ${EXPERIMENT_DIR}

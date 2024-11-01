@@ -5,15 +5,16 @@ DATA_DIR=$1;
 OUTPUT_DIR=$2;
 LANGUAGE=$3;
 JOB_ID=$4;
+MODEL_NAME=$5;
 
 JOB_PORT=$((60000 + ${JOB_ID}))
 
 mkdir -p DATA_DIR;
 mkdir -p OUTPUT_DIR;
 
-DATA_PATH=${DATA_DIR}/$LANGUAGE.jsonl
-OUTPUT_PATH=${OUTPUT_DIR}/$LANGUAGE
-MODEL_PATH="deepseek-ai/deepseek-coder-6.7b-base"
+DATA_PATH=${DATA_DIR}/${LANGUAGE}.jsonl
+OUTPUT_PATH=${OUTPUT_DIR}/${LANGUAGE}
+MODEL_PATH=${MODEL_NAME}
 
 RUN_GPU_IDS=${CUDA_VISIBLE_DEVICES:-1}
 echo "RUNNING ON GPU: $RUN_GPU_IDS"
@@ -26,8 +27,8 @@ finetune/finetune_deepseekcoder.py \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \
-    --model_max_length 1216 \
-    --per_device_train_batch_size 512 \
+    --model_max_length 1024 \
+    --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 1 \
     --evaluation_strategy "no" \
     --save_strategy "epoch" \

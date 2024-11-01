@@ -8,32 +8,39 @@ theblackcat102/evol-codealpaca-v1
 MAGIC_NUMBER=10
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR python 0;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR python 0 ${MODEL_NAME};
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR cpp 1;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR cpp 1 ${MODEL_NAME};
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR php 2;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR php 2 ${MODEL_NAME};
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR swift 3;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR swift 3 ${MODEL_NAME};
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4 ${MODEL_NAME};
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5 ${MODEL_NAME};
 
 DATA_NAME=rombodawg/MegaCodeTraining
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATA_NAME};
-ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 6;
+ts --gpus 1 sh ./train.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 6 ${MODEL_NAME};
 ```
 
 ~~~

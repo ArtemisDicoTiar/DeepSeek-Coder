@@ -25,29 +25,23 @@ rombodawg/MegaCodeTraining
 theblackcat102/evol-codealpaca-v1
 
 # todos
-DATASET=rombodawg/MegaCodeTraining
-ts --gpus 2 sh ./evaluate.sh cpp cpp humaneval ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/cpp;
-ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/cpp;
-
-DATASET=rombodawg/MegaCodeTraining
-ts --gpus 2 sh ./evaluate.sh php php humaneval ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/php;
-ts --gpus 2 sh ./evaluate.sh php php mbpp ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/php;
-
-DATASET=rombodawg/MegaCodeTraining
-ts --gpus 2 sh ./evaluate.sh swift swift humaneval ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/swift;
-ts --gpus 2 sh ./evaluate.sh swift swift mbpp ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/swift;
-
-DATASET=rombodawg/MegaCodeTraining
-ts --gpus 2 sh ./evaluate.sh go go humaneval ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/go;
-ts --gpus 2 sh ./evaluate.sh go go mbpp ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/go;
-
-DATASET=rombodawg/MegaCodeTraining
-ts --gpus 2 sh ./evaluate.sh rust rs humaneval ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/rust;
-ts --gpus 2 sh ./evaluate.sh rust rs mbpp ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/rust;
-
-DATASET=rombodawg/MegaCodeTraining
-ts --gpus 2 sh ./evaluate.sh scala scala humaneval ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/scala;
-ts --gpus 2 sh ./evaluate.sh scala scala mbpp ${DATASET}/results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/${DATASET}/scala;
+#SUBMIT_LANGUAGES=(cpp php swift go rust scala python);
+SUBMIT_LANGUAGES=(python);
+EXPERIMENT_NAME=experiments-magi;
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
+DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
+for LANGUAGE in ${SUBMIT_LANGUAGES[@]}; do
+    if [ $LANGUAGE = "rust" ]; then
+        BIG_CODE_LANGUAGE=rs
+    elif [ $LANGUAGE = "python" ]; then
+        BIG_CODE_LANGUAGE=py
+    else
+        BIG_CODE_LANGUAGE=$LANGUAGE
+    fi
+    EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
+    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+done;
 ```
 ~~~
 MODEL_NAME=deepseek-coder-6.7b-base;

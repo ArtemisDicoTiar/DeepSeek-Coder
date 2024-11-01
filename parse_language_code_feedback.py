@@ -13,13 +13,9 @@ if __name__ == '__main__':
     Parse the dataset to extract the language of the code snippet
     
     datasets: 
-        rombodawg/MegaCodeTraining
-        theblackcat102/evol-codealpaca-v1 
-        ise-uiuc/Magicoder-OSS-Instruct-75K 
-        ise-uiuc/Magicoder-Evol-Instruct-110K
-        m-a-p/CodeFeedback-Filtered-Instruction
+        
+        m-a-p/Code-Feedback
     splits:
-        train
         train
         train
         train
@@ -29,12 +25,11 @@ if __name__ == '__main__':
         instruction output
         problem solution
         instruction response
-        query answer
     
-    DATASETS=("rombodawg/MegaCodeTraining" "theblackcat102/evol-codealpaca-v1" "ise-uiuc/Magicoder-OSS-Instruct-75K" "ise-uiuc/Magicoder-Evol-Instruct-110K" "m-a-p/CodeFeedback-Filtered-Instruction"); 
-    INPUTS=(USER instruction problem instruction query);
-    OUTPUTS=(ASSISTANT output solution response answer);
-    for i in {1..5}; do
+    DATASETS=("rombodawg/MegaCodeTraining" "theblackcat102/evol-codealpaca-v1" "ise-uiuc/Magicoder-OSS-Instruct-75K" "ise-uiuc/Magicoder-Evol-Instruct-110K");
+    INPUTS=(USER instruction problem instruction);
+    OUTPUTS=(ASSISTANT output solution response);
+    for i in {1..4}; do
         echo "Parsing ${DATASETS[$i]}";
         python3 parse_language.py \
             --dataset=${DATASETS[$i]} \
