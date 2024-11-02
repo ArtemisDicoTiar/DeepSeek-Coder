@@ -9,7 +9,7 @@ import transformers
 from transformers import Trainer
 from datasets import load_dataset
 
-from finetune.sft import SftArguments, LotteryTicketSparseFineTuner
+from sft import SftArguments, LotteryTicketSparseFineTuner
 
 IGNORE_INDEX = -100
 EOT_TOKEN = "<|EOT|>"
