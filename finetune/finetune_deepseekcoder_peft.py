@@ -29,8 +29,8 @@ class ModelArguments:
     # PEFT configurations
     peft_lora_r: int = field(default=0)
     peft_attn_lora: bool = field(default=True)
-    peft_ff_lora: bool = field(default=False)
-    peft_attn_out_lora: bool = field(default=False)
+    peft_ff_lora: bool = field(default=True)
+    peft_attn_out_lora: bool = field(default=True)
     peft_lora_alpha: float = field(default=None)
     peft_lora_dropout: float = field(default=0)
 
@@ -160,9 +160,6 @@ def train():
         torch_dtype=torch.bfloat16
     )
 
-    for name, layer in model.named_modules():
-        print(name)
-
     if model_args.peft_lora_r:
         from peft import get_peft_model, LoraConfig
 
@@ -185,14 +182,23 @@ def train():
 
         target_modules = []
         if model_args.peft_attn_lora:
-            target_modules += ["self_attn", "self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
+            target_modules += ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
         if model_args.peft_ff_lora:
-            target_modules += ["mlp", "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"]
+            target_modules += ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"]
         if model_args.peft_attn_out_lora:
             target_modules += ["self_attn.o_proj"]
 
         if model_args.peft_lora_alpha is None:
             model_args.peft_lora_alpha = 4 * model_args.peft_lora_r
+
+        # https://discuss.huggingface.co/t/peft-lora-gpt-neox-backward-pass-failing/35641
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
+        else:
+            def make_inputs_require_grad(module, input, output):
+                output.requires_grad_(True)
+
+            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
 
         peft_config = LoraConfig(
             target_modules=target_modules,
@@ -200,11 +206,10 @@ def train():
             lora_alpha=model_args.peft_lora_alpha, lora_dropout=model_args.peft_lora_dropout
         )
         model = get_peft_model(model, peft_config)
-        model.print_trainable_parameters()
 
     if training_args.local_rank == 0:
+        model.print_trainable_parameters()
         print("Load model from {} over.".format(model_args.model_name_or_path))
-
 
     raw_train_datasets = load_dataset(
         'json',
