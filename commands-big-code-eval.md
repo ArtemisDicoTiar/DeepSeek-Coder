@@ -23,10 +23,11 @@ ise-uiuc/Magicoder-OSS-Instruct-75K;
 ise-uiuc/Magicoder-Evol-Instruct-110K
 rombodawg/MegaCodeTraining
 theblackcat102/evol-codealpaca-v1
+m-a-p/CodeFeedback-Filtered-Instruction
 
 # todos
 #SUBMIT_LANGUAGES=(cpp php swift go rust scala python);
-SUBMIT_LANGUAGES=(python);
+SUBMIT_LANGUAGES=(php);
 EXPERIMENT_NAME=experiments-magi;
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
 DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;

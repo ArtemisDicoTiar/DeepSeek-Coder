@@ -6,6 +6,7 @@ from typing import Optional, Dict, Sequence
 import torch
 import torch.distributed
 import transformers
+from requests.packages import target
 from transformers import Trainer
 from datasets import load_dataset
 
@@ -159,16 +160,36 @@ def train():
         torch_dtype=torch.bfloat16
     )
 
+    for name, layer in model.named_modules():
+        print(name)
+
     if model_args.peft_lora_r:
         from peft import get_peft_model, LoraConfig
 
+        """Deepseek Coder model structure:
+        model.layers.20
+        model.layers.20.self_attn
+        model.layers.20.self_attn.q_proj
+        model.layers.20.self_attn.k_proj
+        model.layers.20.self_attn.v_proj
+        model.layers.20.self_attn.o_proj
+        model.layers.20.self_attn.rotary_emb
+        model.layers.20.mlp
+        model.layers.20.mlp.gate_proj
+        model.layers.20.mlp.up_proj
+        model.layers.20.mlp.down_proj
+        model.layers.20.mlp.act_fn
+        model.layers.20.input_layernorm
+        model.layers.20.post_attention_layernorm
+        """
+
         target_modules = []
         if model_args.peft_attn_lora:
-            target_modules += ["c_attn", "q_attn"]
+            target_modules += ["self_attn", "self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
         if model_args.peft_ff_lora:
-            target_modules += ["mlp.c_fc", "mlp.c_proj"]
+            target_modules += ["mlp", "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"]
         if model_args.peft_attn_out_lora:
-            target_modules += ['attn.c_proj']
+            target_modules += ["self_attn.o_proj"]
 
         if model_args.peft_lora_alpha is None:
             model_args.peft_lora_alpha = 4 * model_args.peft_lora_r

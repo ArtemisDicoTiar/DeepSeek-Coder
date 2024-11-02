@@ -195,22 +195,38 @@ def train():
     maskable_trainable_param_nums = 0
     maskable_params = []
 
+    """Deepseek Coder model structure:
+    model.layers.20
+    model.layers.20.self_attn
+    model.layers.20.self_attn.q_proj
+    model.layers.20.self_attn.k_proj
+    model.layers.20.self_attn.v_proj
+    model.layers.20.self_attn.o_proj
+    model.layers.20.self_attn.rotary_emb
+    model.layers.20.mlp
+    model.layers.20.mlp.gate_proj
+    model.layers.20.mlp.up_proj
+    model.layers.20.mlp.down_proj
+    model.layers.20.mlp.act_fn
+    model.layers.20.input_layernorm
+    model.layers.20.post_attention_layernorm
+    """
+
     if sft_args.freeze_all:
         for n, p in model.named_parameters():
             p.requires_grad = False
 
         if sft_args.unfreeze_attn:
             for n, p in model.named_parameters():
-                if any([name in n for name in ['c_attn', 'q_attn', 'attn.c_proj',
-                                               'q_proj', 'k_proj', 'v_proj', 'o_proj',
-                                               'qkv_proj', 'out_proj']]):
+                attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
+                               'self_attn.o_proj']
+                if any([name in n for name in attn_layers]):
                     p.requires_grad = True
 
         if sft_args.unfreeze_ffn:
+            ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
             for n, p in model.named_parameters():
-                if any([name in n for name in ['mlp.c_fc', 'mlp.c_proj',
-                                               'gate_proj', 'up_proj', 'down_proj',
-                                               'fc_in', 'fc_out']]):
+                if any([name in n for name in ffn_layers]):
                     p.requires_grad = True
 
     for n, p in model.named_parameters():
