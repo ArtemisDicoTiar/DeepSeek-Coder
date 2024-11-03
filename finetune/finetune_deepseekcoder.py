@@ -133,6 +133,12 @@ def train():
         use_fast=True,
         trust_remote_code=True
     )
+    if tokenizer.eos_token_id != 32014:
+        tokenizer.eos_token_id = 32014
+        tokenizer.eos_token = tokenizer.decode(tokenizer.eos_token_id)
+
+        tokenizer.pad_token_id = 32014
+        tokenizer.pad_token = tokenizer.decode(tokenizer.pad_token_id)
 
     print("PAD Token:", tokenizer.pad_token, tokenizer.pad_token_id)
     print("BOS Token", tokenizer.bos_token, tokenizer.bos_token_id)
@@ -145,10 +151,6 @@ def train():
         model_args.model_name_or_path,
         torch_dtype=torch.bfloat16
     )
-
-    if training_args.local_rank == 0:
-        print("Load model from {} over.".format(model_args.model_name_or_path))
-
 
     raw_train_datasets = load_dataset(
         'json',

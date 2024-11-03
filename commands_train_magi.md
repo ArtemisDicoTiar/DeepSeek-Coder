@@ -32,10 +32,10 @@ MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
 ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4 $MODEL_NAME;
 
-DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+DATA_NAME=rombodawg/MegaCodeTraining
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 1 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-lr=5e-7/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 4 sh ./train_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5 $MODEL_NAME;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base

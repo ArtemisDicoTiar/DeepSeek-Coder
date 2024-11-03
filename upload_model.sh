@@ -7,6 +7,9 @@ LANGUAGE=$3;
 MODEL_NAME=$4;
 EXPERIMENT_NAME=$5;
 
+# replace "/" with "-" for model name
+MODEL_NAME=$(echo $MODEL_NAME | sed 's/\//-/g')
+
 echo UPLOADING ${EXPERIMENT_DIR}/${LANGUAGE} to
 echo DicoTiar/${MODEL_NAME}-${EXPERIMENT_NAME}-${DATASET}-${LANGUAGE}
 

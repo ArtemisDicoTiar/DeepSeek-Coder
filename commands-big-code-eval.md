@@ -27,11 +27,13 @@ m-a-p/CodeFeedback-Filtered-Instruction
 
 # todos
 #SUBMIT_LANGUAGES=(cpp php swift go rust scala python);
-SUBMIT_LANGUAGES=(php);
-EXPERIMENT_NAME=experiments-magi;
+SUBMIT_LANGUAGES=(rust);
+TARGET_TASKS=(humaneval mbpp);
+EXPERIMENT_NAME="experiments-magi-lr=2e-6";
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
-DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
+DATASET=rombodawg/MegaCodeTraining;
 for LANGUAGE in ${SUBMIT_LANGUAGES[@]}; do
+  for TASK in ${TARGET_TASKS[@]}; do
     if [ $LANGUAGE = "rust" ]; then
         BIG_CODE_LANGUAGE=rs
     elif [ $LANGUAGE = "python" ]; then
@@ -39,9 +41,9 @@ for LANGUAGE in ${SUBMIT_LANGUAGES[@]}; do
     else
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
-    EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
-    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+    EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE}/checkpoint-30;
+    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+  done;
 done;
 ```
 ~~~

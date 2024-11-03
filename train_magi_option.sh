@@ -19,6 +19,7 @@ MODEL_PATH=${MODEL_NAME}
 RUN_GPU_IDS=${CUDA_VISIBLE_DEVICES:-1}
 echo "RUNNING ON GPU: $RUN_GPU_IDS"
 unset CUDA_VISIBLE_DEVICES
+# MAX LENGTH https://huggingface.co/ise-uiuc/Magicoder-DS-6.7B/blob/main/tokenizer_config.json
 deepspeed \
     --include localhost:${RUN_GPU_IDS} \
     --master_port ${JOB_PORT} \
@@ -27,20 +28,20 @@ finetune/finetune_deepseekcoder.py \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \
-    --model_max_length 1024 \
+    --model_max_length 16384 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 1 \
     --evaluation_strategy "no" \
     --save_strategy "epoch" \
     --save_steps 100 \
     --save_total_limit 2 \
-    --learning_rate 5e-5 \
+    --learning_rate 2e-6 \
     --warmup_steps 15 \
     --logging_steps 1 \
     --lr_scheduler_type "linear" \
     --gradient_checkpointing True \
     --report_to "wandb" \
-    --deepspeed finetune/configs/ds_config_zero1_magi.json \
+    --deepspeed finetune/configs/ds_config_zero3_magi.json \
     --bf16 True;
 
 #rm -rf ${OUTPUT_PATH}/**/global_step*;
