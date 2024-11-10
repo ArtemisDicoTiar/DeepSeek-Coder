@@ -10,7 +10,6 @@ MAGIC_NUMBER=10
 
 
 for lr in "5e-5" "2e-6" "5e-6" "2e-7"; do
-  lr=5e-6
     DATA_NAME=rombodawg/MegaCodeTraining
     MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
     OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-${lr}/${MODEL_NAME}/${DATA_NAME};
@@ -33,7 +32,7 @@ for TASK in ${TARGET_TASKS[@]}; do
             BIG_CODE_LANGUAGE=$LANGUAGE
         fi
         EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-        ts -D 742 --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
+        ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
       done;
     done;
 done;
