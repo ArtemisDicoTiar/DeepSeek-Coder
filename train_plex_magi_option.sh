@@ -6,7 +6,6 @@ OUTPUT_DIR=$2;
 LANGUAGE=$3;
 JOB_ID=$4;
 MODEL_NAME=$5;
-lr=$6;
 
 JOB_PORT=$((60000 + ${JOB_ID}))
 
@@ -37,7 +36,7 @@ finetune/finetune_deepseekcoder_lt_sft.py \
     --save_strategy "epoch" \
     --save_steps 100 \
     --save_total_limit 2 \
-    --learning_rate ${lr} \
+    --learning_rate 5e-6 \
     --warmup_steps 15 \
     --logging_steps 1 \
     --lr_scheduler_type "linear" \
@@ -50,11 +49,12 @@ finetune/finetune_deepseekcoder_lt_sft.py \
     --full_l1_reg 0.0 \
     --sparse_l1_reg 0.0 \
     --full_ft_max_epochs_per_iteration 3 \
-    --sparse_ft_max_epochs_per_iteration 3
+    --sparse_ft_max_epochs_per_iteration 3 \
+    --freeze_all --unfreeze_attn --unfreeze_ffn
 #    --mask_embed=True \
 
 
 #rm -rf ${OUTPUT_PATH}/**/global_step*;
-#find "${OUTPUT_PATH}" -type d -name "global_step*" -exec rm -rf {} +
+find "${OUTPUT_PATH}" -type d -name "global_step*" -exec rm -rf {} +
 
 PING PLEX ${LANGUAGE} DONE;

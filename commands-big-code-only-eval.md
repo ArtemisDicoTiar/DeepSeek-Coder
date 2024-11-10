@@ -4,29 +4,29 @@ BIG_CODE_LANGUAGE=java;
 EXPERIMENT_NAME="experiments";
 MODEL_NAME=deepseek-coder-6.7b-base;
 EXPERIMENT_DIR=deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
-ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+ts sh ./only_evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+ts sh ./only_evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
 
-ts --gpus 2 sh ./evaluate.sh cpp cpp humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh cpp cpp humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh cpp cpp humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh cpp cpp humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh php php humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh php php mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh php php humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh php php mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh swift swift humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh swift swift mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh swift swift humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh swift swift mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh go go humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh go go mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh go go humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh go go mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh rust rs humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh rust rs mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh rust rs humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh rust rs mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh scala scala humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh scala scala mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh scala scala humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts sh ./only_evaluate.sh scala scala mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
 
 ise-uiuc/Magicoder-OSS-Instruct-75K;
@@ -54,7 +54,7 @@ for TASK in ${TARGET_TASKS[@]}; do
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
     EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+    ts sh ./only_evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
   done;
 done;
 ```
@@ -65,8 +65,8 @@ sh ./merge_results.py /workspace/DeepSeek-Coder/experiments/${MODEL_NAME}/${DATA
 ~~~
 
 DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
-ts --gpus 2 sh ./evaluate.sh cpp cpp humaneval results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/cpp;
-ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/cpp;
+ts --gpus 2 sh ./only_evaluate.sh cpp cpp humaneval results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/cpp;
+ts --gpus 2 sh ./only_evaluate.sh cpp cpp mbpp results /workspace/DeepSeek-Coder/experiments/deepseek-coder-6.7b-base/cpp;
 
 
 

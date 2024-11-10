@@ -35,7 +35,7 @@ finetune/finetune_deepseekcoder.py \
     --save_strategy "epoch" \
     --save_steps 100 \
     --save_total_limit 2 \
-    --learning_rate 2e-6 \
+    --learning_rate 5e-6 \
     --warmup_steps 15 \
     --logging_steps 1 \
     --lr_scheduler_type "linear" \

@@ -4,8 +4,8 @@ BIG_CODE_LANGUAGE=java;
 EXPERIMENT_NAME="experiments";
 MODEL_NAME=deepseek-coder-6.7b-base;
 EXPERIMENT_DIR=deepseek-ai/deepseek-coder-6.7b-base;
-ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
-ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
+ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
 
 ts --gpus 2 sh ./evaluate.sh cpp cpp humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
 ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
@@ -54,7 +54,7 @@ for TASK in ${TARGET_TASKS[@]}; do
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
     EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME};
+    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
   done;
 done;
 ```
