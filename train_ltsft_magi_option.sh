@@ -49,12 +49,12 @@ finetune/finetune_deepseekcoder_lt_sft.py \
     --freeze_layer_norm \
     --full_l1_reg 0.0 \
     --sparse_l1_reg 0.0 \
-    --full_ft_max_epochs_per_iteration 3 \
-    --sparse_ft_max_epochs_per_iteration 3
-#    --mask_embed=True \
+    --full_ft_max_epochs_per_iteration 2 \
+    --sparse_ft_max_epochs_per_iteration 2
+#    --mask_embed=True
 
 
 #rm -rf ${OUTPUT_PATH}/**/global_step*;
-#find "${OUTPUT_PATH}" -type d -name "global_step*" -exec rm -rf {} +
+find "${OUTPUT_PATH}" -type d -name "global_step*" -exec rm -rf {} +
 
 PING PLEX ${LANGUAGE} DONE;

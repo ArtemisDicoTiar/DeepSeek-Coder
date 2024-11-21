@@ -7,9 +7,14 @@ theblackcat102/evol-codealpaca-v1
 
 MAGIC_NUMBER=10
 
+lr=5e-6
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-${lr}/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 8 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 1 $MODEL_NAME $lr
+  "2e-7"
 
-
-for lr in "5e-5" "2e-6" "5e-6" "2e-7"; do
+for lr in "5e-6" "2e-6"; do
     DATA_NAME=rombodawg/MegaCodeTraining
     MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
     OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-${lr}/${MODEL_NAME}/${DATA_NAME};
@@ -17,11 +22,11 @@ for lr in "5e-5" "2e-6" "5e-6" "2e-7"; do
 done;
 
 SUBMIT_LANGUAGES=(rust);
-TARGET_TASKS=(humaneval mbpp);
-MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
+TARGET_TASKS=(mbpp);
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 DATASET=rombodawg/MegaCodeTraining
 for TASK in ${TARGET_TASKS[@]}; do
-    for lr in "5e-5" "2e-6" "5e-6" "2e-7"; do
+    for lr in "5e-5" "5e-6"; do
       EXPERIMENT_NAME="experiments-magi-ltsft-${lr}";
       for LANGUAGE in ${SUBMIT_LANGUAGES[@]}; do
         if [ $LANGUAGE = "rust" ]; then

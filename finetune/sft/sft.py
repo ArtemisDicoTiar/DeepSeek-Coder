@@ -83,6 +83,7 @@ class SFT:
                 )
 
             sft_file = os.path.join(sft_dir, SFT_FILE_NAME)
+            print(f'Loading SFT from {sft_file}')
             tensors = torch.load(sft_file)
             
             if 'diffs' in tensors:
@@ -116,7 +117,7 @@ class SFT:
             fully-specified dense values (i.e. an "abs" parameter).
         """
         if diff:
-            self.diffs[name] = tensor.to_sparse().coalesce()
+            self.diffs[name] = tensor.to('cpu').to_sparse().coalesce()
         else:
             self.abs[name] = tensor.to('cpu')
 
@@ -151,6 +152,10 @@ class SFT:
             for name in self.diffs.keys():
                 diff = self.diffs[name]
                 tensor = model.get_parameter(name)
+                if tensor.shape != diff.shape:
+                    print(f'Warning: shape mismatch for {name}, {tensor.shape} != {diff.shape}')
+                else:
+                    print(f'Applying {name}')
                 if diff.device != tensor.device:
                     # Permanently copy the diff tensor to the parameter tensor's
                     # device so that future applications and reversions can

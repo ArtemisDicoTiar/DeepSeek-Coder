@@ -3,6 +3,7 @@ import random
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Sequence
 
+import deepspeed
 import torch
 import torch.distributed
 import transformers
@@ -151,6 +152,13 @@ def train():
         model_args.model_name_or_path,
         torch_dtype=torch.bfloat16
     )
+    print("Model token embeddings size:", model.get_input_embeddings().weight.shape[0])
+    print("Resize token embeddings to", len(tokenizer))
+    model.resize_token_embeddings(len(tokenizer))
+
+    # embedding_size = model.get_input_embeddings().weight.shape[0]
+    # if len(tokenizer) > embedding_size:
+    #     model.resize_token_embeddings(len(tokenizer))
 
     if training_args.local_rank == 0:
         print("Load model from {} over.".format(model_args.model_name_or_path))
@@ -216,18 +224,18 @@ def train():
         for n, p in model.named_parameters():
             p.requires_grad = False
 
-        if sft_args.unfreeze_attn:
-            for n, p in model.named_parameters():
-                attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
-                               'self_attn.o_proj']
-                if any([name in n for name in attn_layers]):
-                    p.requires_grad = True
+    if sft_args.unfreeze_attn:
+        for n, p in model.named_parameters():
+            attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
+                           'self_attn.o_proj']
+            if any([name in n for name in attn_layers]):
+                p.requires_grad = True
 
-        if sft_args.unfreeze_ffn:
-            ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
-            for n, p in model.named_parameters():
-                if any([name in n for name in ffn_layers]):
-                    p.requires_grad = True
+    if sft_args.unfreeze_ffn:
+        ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+        for n, p in model.named_parameters():
+            if any([name in n for name in ffn_layers]):
+                p.requires_grad = True
 
     for n, p in model.named_parameters():
         total_params += p.numel()
@@ -266,6 +274,7 @@ def train():
 
     trainer.train()
     trainer.save_state()
+    trainer.save_sft()
     safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
 
 

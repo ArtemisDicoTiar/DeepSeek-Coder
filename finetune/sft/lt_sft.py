@@ -1,10 +1,13 @@
 import gc
+import heapq
 import json
 import logging
 import os
+import warnings
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from time import sleep
+from time import sleep, time
+from typing import Optional, Union, Dict, Any, List
 
 import deepspeed
 import numpy as np
@@ -17,7 +20,9 @@ from torch.distributed import broadcast
 
 from tqdm import tqdm
 from deepspeed import zero
-
+from transformers import TrainerState, Trainer, enable_full_determinism
+from transformers.trainer_utils import get_last_checkpoint, find_executable_batch_size
+from transformers.utils import is_sagemaker_mp_enabled
 
 from .trainer import SparseFineTuner
 
@@ -41,20 +46,21 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 self.n_tunable_params = self.sft_args.ft_params_num
 
         def unfreeze_k_most_changed_params(self, k):
+            # make a temp file to indicate that following script is running
+            # use temp_dir
             raw_device_ids = os.environ["CUDA_VISIBLE_DEVICES"]
             device_ids = raw_device_ids.split(",")
             device_ids = [int(d) for d in device_ids]
             target_device = min(device_ids)
-
-            # make a temp file to indicate that following script is running
-            # use temp_dir
             temp_dir = Path("/tmp")
             temp_file = temp_dir / "ltsft" / f"{raw_device_ids}.running"
             temp_file.parent.mkdir(parents=True, exist_ok=True)
-            if deepspeed.comm.get_rank() == target_device:
+            if torch.distributed.get_rank() == target_device:
+                print("Creating temp file")
                 temp_file.touch()
             else:
-                sleep(5)
+                while not temp_file.exists():
+                    sleep(1)
 
             with torch.no_grad():
                 diffs = []
@@ -63,11 +69,11 @@ def LotteryTicketSparseFineTuner(_Trainer):
                     desc='Finding masking threshold',
                     disable=self.args.local_rank != target_device or self.args.disable_tqdm,
                 ):
-                    p.grad = None # save some memory to use for the diff calculation
+                    # p.grad = None # save some memory to use for the diff calculation
                     # if n in self.maskable_params:
                     if any([n in param_name for param_name in self.maskable_params]):
                         with zero.GatheredParameters(p, modifier_rank=target_device):
-                            if deepspeed.comm.get_rank() == target_device:
+                            if torch.distributed.get_rank() == target_device:
                                 delta = p - self._original_params[n].to(p.device)
                                 delta = delta.view(-1)
                                 self._mask[n] = self._mask[n].to(p.device)
@@ -76,7 +82,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                                 abs_deltas = torch.abs(valid_deltas)
                                 diffs.extend(abs_deltas.tolist())
 
-                if deepspeed.comm.get_rank() == target_device:
+                if torch.distributed.get_rank() == target_device:
                     if k > len(diffs):
                         raise ValueError(
                             'Was requested to unfreeze {k} params, but only '
@@ -85,14 +91,49 @@ def LotteryTicketSparseFineTuner(_Trainer):
                     print(f'Found {len(diffs)} diffs')
                     print("Calculating threshold")
                     diffs = np.partition(diffs, len(diffs) - k)
-                    thresh = diffs[len(diffs) - k] + 1e-6
+                    thresh = diffs[len(diffs) - k]
                     print(f'Masking threshold = {thresh}')
+
+
+                # # https://chatgpt.com/share/673db0ec-0534-8005-930d-bf7a3b915d0f
+                # diffs = []
+                # for n, p in tqdm(
+                #         list(self.model.named_parameters()),
+                #         desc='Finding masking threshold',
+                #         disable=self.args.local_rank != target_device or self.args.disable_tqdm,
+                # ):
+                #     if any(n in param_name for param_name in self.maskable_params):
+                #         with zero.GatheredParameters(p, modifier_rank=target_device):
+                #             if torch.distributed.get_rank() == target_device:
+                #                 delta = p - self._original_params[n].to(p.device)
+                #                 delta = delta.view(-1)
+                #                 self._mask[n] = self._mask[n].to(p.device)
+                #                 valid_indices = (~self._mask[n]).view(-1)
+                #                 valid_deltas = delta[valid_indices]
+                #                 abs_deltas = torch.abs(valid_deltas)
+                #                 for abs_delta in abs_deltas.tolist():
+                #                     if len(diffs) < k:
+                #                         heapq.heappush(diffs, abs_delta)
+                #                     else:
+                #                         if abs_delta > diffs[0]:
+                #                             heapq.heapreplace(diffs, abs_delta)
+                #
+                # if torch.distributed.get_rank() == target_device:
+                #     if len(diffs) < k:
+                #         raise ValueError(
+                #             f'Was requested to unfreeze {k} params, but only '
+                #             f'{len(diffs)} are frozen.'
+                #         )
+                #     print(f'Found {len(diffs)} diffs')
+                #     print("Calculating threshold")
+                #     thresh = diffs[0]
+                #     print(f'Masking threshold = {thresh}')
 
                     n_masked = 0
                     for n, p in tqdm(
                         list(self.model.named_parameters()),
                         desc='Updating masks',
-                        disable=self.args.local_rank > 0 or self.args.disable_tqdm,
+                        disable=self.args.local_rank != target_device or self.args.disable_tqdm,
                     ):
                         if n in self.maskable_params:
                             abs_delta = (p - self._original_params[n].to(p.device)).abs()
@@ -113,9 +154,9 @@ def LotteryTicketSparseFineTuner(_Trainer):
                     # wait for the temp file to be deleted
                     if not temp_file.exists():
                         # load the mask from the file
-                        this_device_id = deepspeed.comm.get_rank()
-                        if this_device_id != target_device:
-                            self._mask = torch.load(mask_file)
+                        this_device_id = torch.distributed.get_rank()
+                        if torch.distributed.get_rank() != target_device:
+                            self._mask = torch.load(mask_file, map_location=f"cuda:{this_device_id}")
                             print("Mask loaded")
                             loading_status_file = temp_dir / "ltsft" / f"{this_device_id}.loaded"
                             loading_status_file.touch()
@@ -123,10 +164,10 @@ def LotteryTicketSparseFineTuner(_Trainer):
                         print("Temp file deleted")
                         break
 
-                if deepspeed.comm.get_rank() == target_device:
+                if torch.distributed.get_rank() == target_device:
                     while True:
                         # wait for all loading_status_file to be created
-                        if len(list(temp_dir.glob("ltsft/*.loaded"))) == len(device_ids):
+                        if len(list(temp_dir.glob("ltsft/*.loaded"))) == len(device_ids) - 1:
                             # delete all loading_status_file
                             for f in temp_dir.glob("ltsft/*.loaded"):
                                 f.unlink()
@@ -137,10 +178,33 @@ def LotteryTicketSparseFineTuner(_Trainer):
 
                             break
 
+        def _inner_post_training_loop(self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None):
+            # Hack to fix: https://github.com/huggingface/transformers/issues/24558
+            if self.args.auto_find_batch_size:
+                self.model_wrapped = self.model
+                self.deepspeed = None
+            return super()._inner_training_loop(batch_size, args, resume_from_checkpoint, trial, ignore_keys_for_eval)
+
+        def post_train(self,
+                       resume_from_checkpoint: Optional[Union[str, bool]] = None,
+                       trial: Union["optuna.Trial", Dict[str, Any]] = None,
+                       ignore_keys_for_eval: Optional[List[str]] = None,
+                       **kwargs,):
+            args = self.args
+            inner_training_loop = find_executable_batch_size(
+                self._inner_post_training_loop, self._train_batch_size, args.auto_find_batch_size
+            )
+            return inner_training_loop(
+                args=args,
+                resume_from_checkpoint=resume_from_checkpoint,
+                trial=trial,
+                ignore_keys_for_eval=ignore_keys_for_eval,
+            )
+
         def train(self, **kwargs):
             self.freeze()
             result = None
-            
+
             for it in range(self.sft_args.n_ft_iterations):
                 logger.info(f'Fine-tuning iteration {it+1}')
                 with torch.no_grad():
@@ -150,8 +214,8 @@ def LotteryTicketSparseFineTuner(_Trainer):
                     }
 
                 self.disable_masking()
-                self.optimizer = None
-                self.lr_scheduler = None
+                self.model_wrapped = self.model
+                self.deepspeed = None
                 self.set_training_len(
                     self.sft_args.full_ft_min_steps_per_iteration,
                     self.sft_args.full_ft_max_steps_per_iteration,
@@ -166,6 +230,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 else:
                     super().train(**kwargs)
 
+                print("Unfreezing..")
                 self.unfreeze_k_most_changed_params(
                     self.n_tunable_params // self.sft_args.n_ft_iterations
                 )
@@ -175,15 +240,32 @@ def LotteryTicketSparseFineTuner(_Trainer):
                         p.copy_(previous_params[n])
 
                 self.enable_masking()
-                self.optimizer = None
-                self.lr_scheduler = None
+                # self.optimizer = None
+                # self.lr_scheduler = None
                 self.set_training_len(
                     self.sft_args.sparse_ft_min_steps_per_iteration,
                     self.sft_args.sparse_ft_max_steps_per_iteration,
                     self.sft_args.sparse_ft_max_epochs_per_iteration,
                 )
+
+                self.model_wrapped = self.model
+                self.deepspeed = None
                 result = super().train(**kwargs)
             
             return result
+
+        def save_sft(self, **kwargs):
+            raw_device_ids = os.environ["CUDA_VISIBLE_DEVICES"]
+            device_ids = raw_device_ids.split(",")
+            device_ids = [int(d) for d in device_ids]
+            target_device = min(device_ids)
+
+            checkpoint_dir = os.path.join(self.args.output_dir, f"checkpoint-{self.state.global_step}")
+            Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
+
+            if torch.distributed.get_rank() == target_device:
+                print("Saving the trainer SFT to disk.")
+                self.sft().save(checkpoint_dir)
+                print("Trainer SFT saved.")
 
     return _LotteryTicketSparseFineTuner

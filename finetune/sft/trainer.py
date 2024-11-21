@@ -2,7 +2,9 @@ import itertools
 import logging
 import os
 import random
+from typing import Dict
 
+import deepspeed
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -197,10 +199,14 @@ def SparseFineTuner(_Trainer):
                 self.calculate_reg_loss = False
 
             if self._masking_enabled:
-                # set gradients for non-trainable parametres to zero.
+                print("Masking enabled")
+                # set gradients for non-trainable parameters to zero.
                 for n, p in self.model.named_parameters():
-                    if n in self.maskable_params and p.grad is not None:
-                        p.grad *= self._mask[n]
+                    if any([n in param_name for param_name in self.maskable_params]):
+                        grad = deepspeed.utils.safe_get_full_grad(p)
+                        if grad is not None:
+                            deepspeed.utils.safe_set_full_grad(p, grad * self._mask[n])
+                            print(f"Masked {n}")
 
             return loss
 
