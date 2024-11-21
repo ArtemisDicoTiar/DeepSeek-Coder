@@ -10,16 +10,18 @@ MAGIC_NUMBER=10
 lr=5e-6
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-${lr}/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 8 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 1 $MODEL_NAME $lr
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex-${lr}/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 8 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 1 $MODEL_NAME $lr
   "2e-7"
 
 for lr in "5e-6" "2e-6"; do
     DATA_NAME=rombodawg/MegaCodeTraining
     MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-    OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-${lr}/${MODEL_NAME}/${DATA_NAME};
-    ts --gpus 8 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 1 $MODEL_NAME $lr
+    OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex-${lr}/${MODEL_NAME}/${DATA_NAME};
+    ts --gpus 8 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 1 $MODEL_NAME $lr
 done;
+
+
 
 SUBMIT_LANGUAGES=(rust);
 TARGET_TASKS=(humaneval mbpp);
@@ -27,7 +29,7 @@ MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 DATASET=rombodawg/MegaCodeTraining
 for TASK in ${TARGET_TASKS[@]}; do
     for lr in "5e-5"; do
-      EXPERIMENT_NAME="experiments-magi-ltsft-${lr}";
+      EXPERIMENT_NAME="experiments-magi-ltsft-plex-${lr}";
       for LANGUAGE in ${SUBMIT_LANGUAGES[@]}; do
         if [ $LANGUAGE = "rust" ]; then
             BIG_CODE_LANGUAGE=rs
@@ -44,44 +46,45 @@ done;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 4 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR cpp 1 $MODEL_NAME; 
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 4 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR cpp 1 $MODEL_NAME; 
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 4 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR php 2 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 4 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR php 2 $MODEL_NAME;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 4 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR swift 3 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 4 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR swift 3 $MODEL_NAME;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 4 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR java 7 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 4 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR java 7 $MODEL_NAME;
 
 
-DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
-MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 1 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR python 0 $MODEL_NAME;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 1 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR python 0 $MODEL_NAME;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 1 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR go 4 $MODEL_NAME;
 
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
-OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft/${MODEL_NAME}/${DATA_NAME};
-ts --gpus 1 sh ./train_ltsft_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 6 $MODEL_NAME;
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR rust 5 $MODEL_NAME;
+
+DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
+OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-ltsft-plex/${MODEL_NAME}/${DATA_NAME};
+ts --gpus 1 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR scala 6 $MODEL_NAME;
 ```
 
 ~~~

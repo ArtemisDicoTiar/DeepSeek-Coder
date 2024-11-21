@@ -41,7 +41,7 @@ finetune/finetune_deepseekcoder_peft.py \
     --lr_scheduler_type "linear" \
     --gradient_checkpointing True \
     --report_to "wandb" \
-    --deepspeed finetune/configs/ds_config_zero3_magi.json \
+    --deepspeed finetune/configs/ds_config_zero1_magi.json \
     --peft_lora_r=$alpha --peft_lora_alpha=$alpha \
     --bf16 True;
 
