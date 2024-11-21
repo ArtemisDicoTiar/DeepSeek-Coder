@@ -6,7 +6,7 @@ OUTPUT_DIR=$2;
 LANGUAGE=$3;
 JOB_ID=$4;
 MODEL_NAME=$5;
-lr=$6;
+lr=${6:-5e-6};
 
 JOB_PORT=$((60000 + ${JOB_ID}))
 

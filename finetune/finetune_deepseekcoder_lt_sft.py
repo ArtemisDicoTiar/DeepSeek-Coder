@@ -152,13 +152,6 @@ def train():
         model_args.model_name_or_path,
         torch_dtype=torch.bfloat16
     )
-    print("Model token embeddings size:", model.get_input_embeddings().weight.shape[0])
-    print("Resize token embeddings to", len(tokenizer))
-    model.resize_token_embeddings(len(tokenizer))
-
-    # embedding_size = model.get_input_embeddings().weight.shape[0]
-    # if len(tokenizer) > embedding_size:
-    #     model.resize_token_embeddings(len(tokenizer))
 
     if training_args.local_rank == 0:
         print("Load model from {} over.".format(model_args.model_name_or_path))
