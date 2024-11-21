@@ -49,9 +49,11 @@ def LotteryTicketSparseFineTuner(_Trainer):
             # make a temp file to indicate that following script is running
             # use temp_dir
             raw_device_ids = os.environ["CUDA_VISIBLE_DEVICES"]
+            print(f"Raw device ids: {raw_device_ids}")
             device_ids = raw_device_ids.split(",")
             device_ids = [int(d) for d in device_ids]
             target_device = min(device_ids)
+            print(f"Target device: {target_device}")
             temp_dir = Path("/tmp")
             temp_file = temp_dir / "ltsft" / f"{raw_device_ids}.running"
             temp_file.parent.mkdir(parents=True, exist_ok=True)
