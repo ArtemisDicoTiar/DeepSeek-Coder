@@ -206,7 +206,6 @@ def SparseFineTuner(_Trainer):
                         grad = deepspeed.utils.safe_get_full_grad(p)
                         if grad is not None:
                             deepspeed.utils.safe_set_full_grad(p, grad * self._mask[n])
-                            print(f"Masked {n}")
 
             return loss
 
