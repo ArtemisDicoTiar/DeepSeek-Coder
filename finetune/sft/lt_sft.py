@@ -24,13 +24,16 @@ from transformers import TrainerState, Trainer, enable_full_determinism
 from transformers.trainer_utils import get_last_checkpoint, find_executable_batch_size
 from transformers.utils import is_sagemaker_mp_enabled
 
+import dask.array as da
+from dask.diagnostics import ProgressBar
+ProgressBar().register()
+
 from .trainer import SparseFineTuner
 
 logger = logging.getLogger(__name__)
 
 
 def LotteryTicketSparseFineTuner(_Trainer):
-
     _SparseFineTuner = SparseFineTuner(_Trainer)
 
     class _LotteryTicketSparseFineTuner(_SparseFineTuner):
@@ -46,6 +49,8 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 self.n_tunable_params = self.sft_args.ft_params_num
 
         def unfreeze_k_most_changed_params(self, k):
+            print(f"Unfreezing {k} most changed params")
+
             # make a temp file to indicate that following script is running
             # use temp_dir
             raw_device_ids = os.environ["CUDA_VISIBLE_DEVICES"]
@@ -92,16 +97,21 @@ def LotteryTicketSparseFineTuner(_Trainer):
                         )
                     print(f'Found {len(diffs)} diffs')
                     print("Calculating threshold")
-                    diffs = np.partition(diffs, len(diffs) - k)
-                    thresh = diffs[len(diffs) - k]
-                    print(f'Masking threshold = {thresh}')
 
+                    diffs_da = da.from_array(diffs, chunks="auto")
+
+                    thresh = da.topk(diffs_da, k)[-1].compute()
+
+                    # thresh = np.partition(diffs, - k)[-k]
+                    print(f'Masking threshold = {thresh}')
 
                 # # https://chatgpt.com/share/673db0ec-0534-8005-930d-bf7a3b915d0f
                 # diffs = []
+                # # ordered by large to small
                 # for n, p in tqdm(
                 #         list(self.model.named_parameters()),
                 #         desc='Finding masking threshold',
+                #         position=0,
                 #         disable=self.args.local_rank != target_device or self.args.disable_tqdm,
                 # ):
                 #     if any(n in param_name for param_name in self.maskable_params):
@@ -113,12 +123,32 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 #                 valid_indices = (~self._mask[n]).view(-1)
                 #                 valid_deltas = delta[valid_indices]
                 #                 abs_deltas = torch.abs(valid_deltas)
-                #                 for abs_delta in abs_deltas.tolist():
+                #                 # reverse sort, large to small
+                #                 sorted_abs_deltas = torch.sort(abs_deltas, descending=True).values
+                #                 sorted_top_k_abs_deltas = sorted_abs_deltas[:k]
+                #                 max_abs_delta = sorted_top_k_abs_deltas[0]
+                #                 min_abs_delta = sorted_top_k_abs_deltas[-1]
+                #
+                #                 if len(diffs) > 0 and max_abs_delta < min(diffs):
+                #                     continue
+                #
+                #                 if len(diffs) > 0 and min_abs_delta > max(diffs):
+                #                     diffs = (sorted_top_k_abs_deltas + diffs)[:k]
+                #                     continue
+                #
+                #                 for abs_delta in tqdm(sorted_top_k_abs_deltas.tolist(), desc='Finding top k index',
+                #                                       position=1):
+                #                     # if diff does not have size of k, add the value
                 #                     if len(diffs) < k:
                 #                         heapq.heappush(diffs, abs_delta)
                 #                     else:
-                #                         if abs_delta > diffs[0]:
-                #                             heapq.heapreplace(diffs, abs_delta)
+                #                         # if the value is smaller than the smallest value in diffs, break
+                #                         if abs_delta < min(diffs):
+                #                             break
+                #
+                #                         # if the value is larger than the largest value in diffs, replace it
+                #                         if abs_delta > max(diffs):
+                #                             heapq.heappushpop(diffs, abs_delta)
                 #
                 # if torch.distributed.get_rank() == target_device:
                 #     if len(diffs) < k:
@@ -128,7 +158,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 #         )
                 #     print(f'Found {len(diffs)} diffs')
                 #     print("Calculating threshold")
-                #     thresh = diffs[0]
+                #     thresh = diffs[-1]
                 #     print(f'Masking threshold = {thresh}')
 
                     n_masked = 0
@@ -180,7 +210,8 @@ def LotteryTicketSparseFineTuner(_Trainer):
 
                             break
 
-        def _inner_post_training_loop(self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None):
+        def _inner_post_training_loop(self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None,
+                                      ignore_keys_for_eval=None):
             # Hack to fix: https://github.com/huggingface/transformers/issues/24558
             if self.args.auto_find_batch_size:
                 self.model_wrapped = self.model
@@ -191,7 +222,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                        resume_from_checkpoint: Optional[Union[str, bool]] = None,
                        trial: Union["optuna.Trial", Dict[str, Any]] = None,
                        ignore_keys_for_eval: Optional[List[str]] = None,
-                       **kwargs,):
+                       **kwargs, ):
             args = self.args
             inner_training_loop = find_executable_batch_size(
                 self._inner_post_training_loop, self._train_batch_size, args.auto_find_batch_size
@@ -208,7 +239,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
             result = None
 
             for it in range(self.sft_args.n_ft_iterations):
-                logger.info(f'Fine-tuning iteration {it+1}')
+                logger.info(f'Fine-tuning iteration {it + 1}')
                 with torch.no_grad():
                     previous_params = {
                         n: torch.zeros_like(p, device='cpu').copy_(p)
@@ -236,7 +267,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 self.unfreeze_k_most_changed_params(
                     self.n_tunable_params // self.sft_args.n_ft_iterations
                 )
-                
+
                 with torch.no_grad():
                     for n, p in self.model.named_parameters():
                         p.copy_(previous_params[n])
@@ -253,7 +284,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                 self.model_wrapped = self.model
                 self.deepspeed = None
                 result = super().train(**kwargs)
-            
+
             return result
 
         def save_sft(self, **kwargs):
