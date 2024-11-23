@@ -48,8 +48,8 @@ finetune/finetune_deepseekcoder_lt_sft.py \
     --freeze_layer_norm \
     --full_l1_reg 0.0 \
     --sparse_l1_reg 0.0 \
-    --full_ft_max_epochs_per_iteration 3 \
-    --sparse_ft_max_epochs_per_iteration 3 \
+    --full_ft_max_epochs_per_iteration 2 \
+    --sparse_ft_max_epochs_per_iteration 2 \
     --freeze_all --unfreeze_attn --unfreeze_ffn
 #    --mask_embed=True \
 
