@@ -199,7 +199,6 @@ def SparseFineTuner(_Trainer):
                 self.calculate_reg_loss = False
 
             if self._masking_enabled:
-                print("Masking enabled")
                 # set gradients for non-trainable parameters to zero.
                 for n, p in self.model.named_parameters():
                     if any([n in param_name for param_name in self.maskable_params]):
