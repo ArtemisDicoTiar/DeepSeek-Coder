@@ -1,5 +1,7 @@
+import gc
 import logging
 import os
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -9,6 +11,7 @@ from .hf_utils import pull_from_hf_model_hub
 logger = logging.getLogger(__name__)
 
 SFT_FILE_NAME = 'pytorch_diff.bin'
+SFT_DIR_NAME = 'sft'
 
 
 def encode_sparse_tensor(tensor):
@@ -84,8 +87,8 @@ class SFT:
 
             sft_file = os.path.join(sft_dir, SFT_FILE_NAME)
             print(f'Loading SFT from {sft_file}')
-            tensors = torch.load(sft_file)
-            
+            tensors = torch.load(sft_file, weights_only=False, map_location='cpu')
+
             if 'diffs' in tensors:
                 self.diffs = {
                     p: decode_sparse_tensor(d)
@@ -104,6 +107,20 @@ class SFT:
         else:
             self.diffs = {}
             self.abs = {}
+
+        # self.diffs = {}
+        # self.abs = {}
+        #
+        # sft_save_dir = Path(sft_dir) / SFT_DIR_NAME
+        #
+        # diff_files = list(sft_save_dir.glob('diff_*.pt'))
+        # abs_files = list(sft_save_dir.glob('abs_*.pt'))
+        # for f in diff_files:
+        #     name = f.stem.replace('diff_', '')
+        #     self.diffs[name] = decode_sparse_tensor(torch.load(f))
+        # for f in abs_files:
+        #     name = f.stem.replace('abs_', '')
+        #     self.abs[name] = torch.load(f)
 
     def add_param(self, name, tensor, diff=True):
         """
@@ -131,7 +148,17 @@ class SFT:
             'abs': self.abs,
         }
         save_path = os.path.join(save_dir, SFT_FILE_NAME)
-        torch.save(tensors, save_path)
+        torch.save(tensors, save_path, pickle_protocol=5)
+
+        # save diffs and abs in each file
+        # sft_save_dir = Path(save_dir) / SFT_DIR_NAME
+        # sft_save_dir.mkdir(parents=True, exist_ok=True)
+        # for n, p in self.diffs.items():
+        #     save_target = encode_sparse_tensor(p)
+        #     torch.save(save_target, sft_save_dir / f'diff_{n}.pt')
+        #
+        # for n, p in self.abs.items():
+        #     torch.save(p, sft_save_dir / f'abs_{n}.pt')
 
     def apply(self, model, with_abs=True):
         """
@@ -164,6 +191,13 @@ class SFT:
                     diff = diff.to(tensor.device)
                     self.diffs[name] = diff
                 tensor += diff
+
+                # delete diff tensor and free memory and gpu memory
+                print(f"loaded diff, free memory: {name}")
+                del diff
+                self.diffs[name] = None
+                gc.collect()
+                torch.cuda.empty_cache()
 
             if with_abs:
                 for name, value in self.abs.items():
