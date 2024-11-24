@@ -36,5 +36,6 @@
     "steps_per_print": 20,
     "train_batch_size": "auto",
     "train_micro_batch_size_per_gpu": "auto",
-    "wall_clock_breakdown": false
+    "wall_clock_breakdown": false,
+    "ignore_unused_parameters": true
 }
