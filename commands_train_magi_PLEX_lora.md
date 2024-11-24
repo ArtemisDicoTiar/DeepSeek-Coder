@@ -27,8 +27,6 @@ MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-lora-plex-e/${MODEL_NAME}/${DATA_NAME};
 ts --gpus 2 sh ./train_plex_magi_option.sh /workspace/DeepSeek-Coder/data/$DATA_NAME $OUTPUT_DIR java 7 $MODEL_NAME;
 
-
-
 DATA_NAME=ise-uiuc/Magicoder-OSS-Instruct-75K
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base
 OUTPUT_DIR=/workspace/DeepSeek-Coder/experiments-magi-lora-plex-e/${MODEL_NAME}/${DATA_NAME};
@@ -77,3 +75,5 @@ done;
 for num in 245 246 247 248 249 250 251 252 253 254 255 256 257 258 259 260 261 262 263 264; do
 ts -r $num
 done
+
+

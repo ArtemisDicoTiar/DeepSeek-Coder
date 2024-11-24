@@ -20,12 +20,16 @@ RUN_GPU_IDS=${CUDA_VISIBLE_DEVICES:-1}
 echo "RUNNING ON GPU: $RUN_GPU_IDS"
 unset CUDA_VISIBLE_DEVICES
 
+full_ckpt_path=/data/DeepSeek-Coder/experiments-magi/deepseek-ai/deepseek-coder-6.7b-base/ise-uiuc/Magicoder-OSS-Instruct-75K/$LANGUAGE
+largest_checkpoint=$(ls -d ${full_ckpt_path}/checkpoint-* 2>/dev/null | grep -oP 'checkpoint-\K[0-9]+' | sort -nr | head -n 1)
+
 params_num=202215383 # about 3% of the total number of deepseekcoder-6.7b (6740512768)
 deepspeed \
     --include localhost:${RUN_GPU_IDS} \
     --master_port ${JOB_PORT} \
 finetune/finetune_deepseekcoder_lt_sft.py \
     --model_name_or_path $MODEL_PATH \
+    --full_ckpt_path $full_ckpt_path/checkpoint-${largest_checkpoint} \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \

@@ -262,6 +262,7 @@ def LotteryTicketSparseFineTuner(_Trainer):
                     print("Loaded!")
                 else:
                     super().train(**kwargs)
+                super().train(**kwargs)
 
                 print("Unfreezing..")
                 self.unfreeze_k_most_changed_params(

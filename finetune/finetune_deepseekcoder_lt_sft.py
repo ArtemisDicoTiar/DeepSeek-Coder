@@ -1,4 +1,5 @@
 import copy
+import os
 import random
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Sequence
@@ -7,6 +8,7 @@ import deepspeed
 import torch
 import torch.distributed
 import transformers
+from deepspeed.runtime import zero
 from transformers import Trainer
 from datasets import load_dataset
 
@@ -190,6 +192,19 @@ def train():
     data_module = dict(train_dataset=train_dataset, eval_dataset=None, data_collator=data_collator)
 
     # ======================== LT-SFT ======================== #
+    raw_device_ids = os.environ["CUDA_VISIBLE_DEVICES"]
+    print(f"Raw device ids: {raw_device_ids}")
+    device_ids = raw_device_ids.split(",")
+    device_ids = [int(d) for d in device_ids]
+    target_device = min(device_ids)
+    print(f"Target device: {target_device}")
+
+    # if sft_args.freeze_layer_norm:
+    #     for n, p in model.named_parameters():
+    #         if 'layernorm' in n.lower():
+    #             with zero.GatheredParameters(p, modifier_rank=target_device):
+    #                 p.requires_grad = False
+
     maskable_param_nums = 0
     total_params = 0
     trainable_params = 0
@@ -197,6 +212,8 @@ def train():
     maskable_params = []
 
     """Deepseek Coder model structure:
+    model.embed_tokens.weight
+
     model.layers.20
     model.layers.20.self_attn
     model.layers.20.self_attn.q_proj
@@ -211,29 +228,78 @@ def train():
     model.layers.20.mlp.act_fn
     model.layers.20.input_layernorm
     model.layers.20.post_attention_layernorm
+    
+    model.norm.weight
+    lm_head.weight
     """
 
-    if sft_args.freeze_all:
-        for n, p in model.named_parameters():
-            p.requires_grad = False
+    for n, p in model.named_parameters():
+        print(n, p.requires_grad)
 
-    if sft_args.unfreeze_attn:
-        for n, p in model.named_parameters():
-            attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
-                           'self_attn.o_proj']
-            if any([name in n for name in attn_layers]):
-                p.requires_grad = True
+    for n, p in model.named_parameters():
+        with zero.GatheredParameters(p, modifier_rank=target_device):
+            target_layers = [
+                "model.embed_tokens.weight",
+                # "self_attn.q_proj",
+                # "self_attn.k_proj",
+                # "self_attn.v_proj",
+                # "self_attn.o_proj",
+                "self_attn.rotary_emb",
+                # "mlp.gate_proj",
+                # "mlp.up_proj",
+                # "mlp.down_proj",
+                "mlp.act_fn",
+                "input_layernorm",
+                "post_attention_layernorm",
+                "model.norm.weight",
+                "lm_head.weight",
+            ]
+            attn_layers = ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj']
+            ffn_layers = ['mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+            if 'layernorm' in n.lower():
+                if sft_args.freeze_layer_norm:
+                    p.requires_grad = False
 
-    if sft_args.unfreeze_ffn:
-        ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
-        for n, p in model.named_parameters():
-            if any([name in n for name in ffn_layers]):
-                p.requires_grad = True
+            if sft_args.freeze_all:
+                if any([name in n for name in attn_layers]):
+                    if sft_args.unfreeze_attn:
+                        # p.requires_grad = True
+                        pass
+
+                elif any([name in n for name in ffn_layers]):
+                    if sft_args.unfreeze_ffn:
+                        # p.requires_grad = True
+                        pass
+                else:
+                    if any([name not in n for name in attn_layers + ffn_layers]):
+                        p.requires_grad = False
+
+
+    # if sft_args.freeze_all:
+    #     for n, p in model.named_parameters():
+    #         with zero.GatheredParameters(p, modifier_rank=target_device):
+    #             p.requires_grad = False
+    #
+    # if sft_args.unfreeze_attn:
+    #     for n, p in model.named_parameters():
+    #         attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
+    #                        'self_attn.o_proj']
+    #         if any([name in n for name in attn_layers]):
+    #             with zero.GatheredParameters(p, modifier_rank=target_device):
+    #                 p.requires_grad = True
+    #
+    # if sft_args.unfreeze_ffn:
+    #     ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+    #     for n, p in model.named_parameters():
+    #         if any([name in n for name in ffn_layers]):
+    #             with zero.GatheredParameters(p, modifier_rank=target_device):
+    #                 p.requires_grad = True
 
     for n, p in model.named_parameters():
         total_params += p.numel()
         if p.requires_grad:
             trainable_params += p.numel()
+
         if n.startswith(model.base_model_prefix) and p.requires_grad:
             maskable_params.append(n)
             maskable_param_nums += p.numel()
@@ -241,6 +307,8 @@ def train():
                 maskable_trainable_param_nums += p.numel()
         else:
             print(n)
+            # pass
+
     print(f'Maskable params: {maskable_params}')
 
     print(f'Total params: {total_params}')

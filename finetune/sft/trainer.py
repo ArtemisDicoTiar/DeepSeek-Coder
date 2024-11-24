@@ -7,9 +7,11 @@ from typing import Dict
 import deepspeed
 import numpy as np
 import torch
+from torch import nn
 from tqdm import tqdm
 
 from transformers import Trainer, TrainerCallback
+from transformers.utils import is_sagemaker_mp_enabled
 
 from .sft import SFT
 from .sft_args import SftArguments
@@ -204,6 +206,8 @@ def SparseFineTuner(_Trainer):
                     if any([n in param_name for param_name in self.maskable_params]):
                         grad = deepspeed.utils.safe_get_full_grad(p)
                         if grad is not None:
+                            if self._mask[n].device != grad.device:
+                                self._mask[n] = self._mask[n].to(grad.device)
                             deepspeed.utils.safe_set_full_grad(p, grad * self._mask[n])
 
             return loss

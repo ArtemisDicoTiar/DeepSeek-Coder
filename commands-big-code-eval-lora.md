@@ -55,7 +55,7 @@ for TASK in ${TARGET_TASKS[@]}; do
     else
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
-    EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
+    EXPERIMENT_DIR=/data/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
     ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false;
   done;
 done;
