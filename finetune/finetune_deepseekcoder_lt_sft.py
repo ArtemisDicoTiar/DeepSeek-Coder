@@ -9,7 +9,7 @@ import torch
 import torch.distributed
 import transformers
 from deepspeed.runtime import zero
-from transformers import Trainer
+from transformers import Trainer, AdamW
 from datasets import load_dataset
 
 from sft import SftArguments, LotteryTicketSparseFineTuner
@@ -202,8 +202,7 @@ def train():
     # if sft_args.freeze_layer_norm:
     #     for n, p in model.named_parameters():
     #         if 'layernorm' in n.lower():
-    #             with zero.GatheredParameters(p, modifier_rank=target_device):
-    #                 p.requires_grad = False
+    #             p.requires_grad = False
 
     maskable_param_nums = 0
     total_params = 0
@@ -234,28 +233,13 @@ def train():
     """
 
     for n, p in model.named_parameters():
-        print(n, p.requires_grad)
-
-    for n, p in model.named_parameters():
         with zero.GatheredParameters(p, modifier_rank=target_device):
-            target_layers = [
-                "model.embed_tokens.weight",
-                # "self_attn.q_proj",
-                # "self_attn.k_proj",
-                # "self_attn.v_proj",
-                # "self_attn.o_proj",
-                "self_attn.rotary_emb",
-                # "mlp.gate_proj",
-                # "mlp.up_proj",
-                # "mlp.down_proj",
-                "mlp.act_fn",
-                "input_layernorm",
-                "post_attention_layernorm",
-                "model.norm.weight",
-                "lm_head.weight",
-            ]
-            attn_layers = ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj']
-            ffn_layers = ['mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
+            model.lm_head.weight = torch.nn.Parameter(
+                model.lm_head.weight.clone().detach().requires_grad_(False)
+            )
+
+            attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj']
+            ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
             if 'layernorm' in n.lower():
                 if sft_args.freeze_layer_norm:
                     p.requires_grad = False
@@ -277,23 +261,20 @@ def train():
 
     # if sft_args.freeze_all:
     #     for n, p in model.named_parameters():
-    #         with zero.GatheredParameters(p, modifier_rank=target_device):
-    #             p.requires_grad = False
+    #         p.requires_grad = False
     #
     # if sft_args.unfreeze_attn:
+    #     attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
+    #                    'self_attn.o_proj']
     #     for n, p in model.named_parameters():
-    #         attn_layers = ['self_attn', 'self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj',
-    #                        'self_attn.o_proj']
     #         if any([name in n for name in attn_layers]):
-    #             with zero.GatheredParameters(p, modifier_rank=target_device):
-    #                 p.requires_grad = True
+    #             p.requires_grad = True
     #
     # if sft_args.unfreeze_ffn:
     #     ffn_layers = ['mlp', 'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']
     #     for n, p in model.named_parameters():
     #         if any([name in n for name in ffn_layers]):
-    #             with zero.GatheredParameters(p, modifier_rank=target_device):
-    #                 p.requires_grad = True
+    #             p.requires_grad = True
 
     for n, p in model.named_parameters():
         total_params += p.numel()
@@ -322,6 +303,9 @@ def train():
     trainer_cls = wrapper_cls(trainer_cls)
 
     # ======================================================== #
+    # trainable_params = [p for n, p in model.named_parameters() if p.requires_grad]
+    # # Create an optimizer with only the trainable parameters
+    # optimizer = AdamW(trainable_params)
 
     trainer = trainer_cls(
         sft_args=sft_args,
