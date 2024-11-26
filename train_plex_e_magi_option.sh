@@ -33,7 +33,7 @@ finetune/finetune_deepseekcoder_lt_sft.py \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \
-    --model_max_length 1024 \
+    --model_max_length 16384 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 1 \
     --evaluation_strategy "no" \
