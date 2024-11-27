@@ -23,7 +23,7 @@ unset CUDA_VISIBLE_DEVICES
 deepspeed \
     --include localhost:${RUN_GPU_IDS} \
     --master_port ${JOB_PORT} \
-finetune/finetune_deepseekcoder_peft.py \
+finetune/finetune_deepseekcoder_ptuning.py \
     --model_name_or_path $MODEL_PATH \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
@@ -41,8 +41,9 @@ finetune/finetune_deepseekcoder_peft.py \
     --lr_scheduler_type "linear" \
     --gradient_checkpointing True \
     --report_to "wandb" \
-    --deepspeed finetune/configs/ds_config_zero3_magi.json \
-    --peft_ptune_num_virtual_tokens=256 --peft_ptune_encoder_hidden_size=2048 \
+    --deepspeed finetune/configs/ds_config_zero1_magi.json \
+    --peft_ptune_num_virtual_tokens 256 \
+    --peft_ptune_encoder_hidden_size 2048 \
     --bf16 True;
 
 #rm -rf ${OUTPUT_PATH}/**/global_step*;
