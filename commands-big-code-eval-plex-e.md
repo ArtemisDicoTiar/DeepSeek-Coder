@@ -39,9 +39,9 @@ m-a-p/CodeFeedback-Filtered-Instruction
 # MAIN LANGS=(java php cpp swift) 
 # NEW LANGS=(go rust scala python)
 #SUBMIT_LANGUAGES=(java php cpp swift go rust scala python);
-SUBMIT_LANGUAGES=(java);
+SUBMIT_LANGUAGES=(cpp java);
 TARGET_TASKS=(humaneval mbpp);
-EXPERIMENT_NAME="experiments-magi-lora-plex";
+EXPERIMENT_NAME="experiments-magi-lora-plex-e";
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
 DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
 for TASK in ${TARGET_TASKS[@]}; do
@@ -54,7 +54,7 @@ for TASK in ${TARGET_TASKS[@]}; do
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
     EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
+    ts --gpus 4 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
   done;
 done;
 ```

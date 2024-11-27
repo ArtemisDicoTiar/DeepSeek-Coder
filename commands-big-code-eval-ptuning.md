@@ -1,12 +1,11 @@
 ```bash
-LANGUAGE=rust;
-BIG_CODE_LANGUAGE=rs;
-EXPERIMENT_NAME="experiments-magi-lora-2e-7";
-MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
-DATASET=rombodawg/MegaCodeTraining
-EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false;
-ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false;
+LANGUAGE=java;
+BIG_CODE_LANGUAGE=java;
+EXPERIMENT_NAME="experiments";
+MODEL_NAME=deepseek-coder-6.7b-base;
+EXPERIMENT_DIR=deepseek-ai/deepseek-coder-6.7b-base;
+ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
+ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} mbpp baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
 
 ts --gpus 2 sh ./evaluate.sh cpp cpp humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
 ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
@@ -40,8 +39,7 @@ m-a-p/CodeFeedback-Filtered-Instruction
 # MAIN LANGS=(java php cpp swift) 
 # NEW LANGS=(go rust scala python)
 #SUBMIT_LANGUAGES=(java php cpp swift go rust scala python);
-# rust java python swift
-SUBMIT_LANGUAGES=(rust);
+SUBMIT_LANGUAGES=(java php cpp swift);
 TARGET_TASKS=(humaneval mbpp);
 EXPERIMENT_NAME="experiments-magi-ptuning";
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
@@ -55,8 +53,8 @@ for TASK in ${TARGET_TASKS[@]}; do
     else
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
-    EXPERIMENT_DIR=/data/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-    ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false;
+    EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
+    ts --gpus 4 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
   done;
 done;
 ```

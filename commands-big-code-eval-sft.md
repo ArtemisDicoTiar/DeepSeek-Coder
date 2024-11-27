@@ -39,7 +39,7 @@ m-a-p/CodeFeedback-Filtered-Instruction
 # MAIN LANGS=(java php cpp swift) 
 # NEW LANGS=(go rust scala python)
 #SUBMIT_LANGUAGES=(java php cpp swift go rust scala python);
-SUBMIT_LANGUAGES=(cpp php);
+SUBMIT_LANGUAGES=(go python rust scala);
 TARGET_TASKS=(humaneval mbpp);
 EXPERIMENT_NAME="experiments-magi-ltsft";
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
