@@ -1,6 +1,5 @@
 import shutil
 
-import deepspeed
 from accelerate import skip_first_batches
 from transformers.dependency_versions_check import dep_version_check
 from transformers.trainer_seq2seq import Seq2SeqTrainer

@@ -1,5 +1,5 @@
 source ~/.zshrc
-va DeepSeek-Coder
+va DeepSeek-Coder-Sora
 
 DATA_DIR=$1;
 OUTPUT_DIR=$2;
