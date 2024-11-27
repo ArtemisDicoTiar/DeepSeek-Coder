@@ -1,3 +1,4 @@
+from transformers.dependency_versions_check import dep_version_check
 from transformers.trainer_seq2seq import Seq2SeqTrainer
 from transformers import Trainer
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
