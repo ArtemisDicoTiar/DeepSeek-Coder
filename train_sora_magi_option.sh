@@ -1,5 +1,5 @@
 source ~/.zshrc
-va DeepSeek-Coder
+va DeepSeek-Coder-Sora
 
 DATA_DIR=$1;
 OUTPUT_DIR=$2;
@@ -7,6 +7,9 @@ LANGUAGE=$3;
 JOB_ID=$4;
 MODEL_NAME=$5;
 alpha=${6:-1024};
+
+peft_lora_r=192 # set by 192 for paper
+peft_lora_alpha=192 # set by 192 for paper
 
 JOB_PORT=$((60000 + ${JOB_ID}))
 
@@ -20,29 +23,37 @@ MODEL_PATH=${MODEL_NAME}
 RUN_GPU_IDS=${CUDA_VISIBLE_DEVICES:-1}
 echo "RUNNING ON GPU: $RUN_GPU_IDS"
 unset CUDA_VISIBLE_DEVICES
+
+
+#python3 \
 deepspeed \
     --include localhost:${RUN_GPU_IDS} \
     --master_port ${JOB_PORT} \
-finetune/finetune_deepseekcoder_peft.py \
+finetune/finetune_deepseekcoder_sora.py \
+    --deepspeed finetune/configs/ds_config_zero1_magi_no_optim.json \
     --model_name_or_path $MODEL_PATH \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \
-    --model_max_length 16384 \
-    --per_device_train_batch_size 4 \
+    --model_max_length 1024 \
+    --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --evaluation_strategy "no" \
     --save_strategy "epoch" \
     --save_steps 100 \
     --save_total_limit 2 \
-    --learning_rate 5e-6 \
-    --warmup_steps 15 \
+    --learning_rate 15e-6 \
     --logging_steps 1 \
     --lr_scheduler_type "linear" \
-    --gradient_checkpointing True \
+    --gradient_checkpointing False \
     --report_to "wandb" \
-    --deepspeed finetune/configs/ds_config_zero3_magi.json \
-    --peft_lora_r=$alpha --peft_lora_alpha=$alpha \
+    --max_grad_norm 0.1 \
+    --warmup_ratio 0.06 \
+    --weight_decay 0.1 \
+    --sparse_lambda 10 \
+    --sparse_lambda_2 3e-4 \
+    --lora_r $peft_lora_r \
+    --lora_alpha $peft_lora_alpha \
     --bf16 True;
 
 #rm -rf ${OUTPUT_PATH}/**/global_step*;

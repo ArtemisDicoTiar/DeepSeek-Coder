@@ -33,7 +33,14 @@ class ModelArguments:
     peft_attn_out_lora: bool = field(default=True)
     peft_lora_alpha: float = field(default=None)
     peft_lora_dropout: float = field(default=0)
-
+    peft_ptune_num_virtual_tokens: int = field(
+        default=None,
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+    )
+    peft_ptune_encoder_hidden_size: int = field(
+        default=None,
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+    )
 
 @dataclass
 class DataArguments:
@@ -205,6 +212,15 @@ def train():
             task_type="CAUSAL_LM", inference_mode=False, r=model_args.peft_lora_r,
             lora_alpha=model_args.peft_lora_alpha, lora_dropout=model_args.peft_lora_dropout
         )
+        model = get_peft_model(model, peft_config)
+
+    elif model_args.peft_ptune_num_virtual_tokens:
+        from peft import PromptEncoderConfig, get_peft_model
+
+        peft_config = PromptEncoderConfig(task_type="CAUSAL_LM",
+                                        num_virtual_tokens=model_args.peft_ptune_num_virtual_tokens,
+                                        encoder_hidden_size=model_args.peft_ptune_encoder_hidden_size,
+                                        inference_mode=False)
         model = get_peft_model(model, peft_config)
 
     if training_args.local_rank == 0:

@@ -58,6 +58,19 @@ for TASK in ${TARGET_TASKS[@]}; do
   done;
 done;
 ```
+
+```bash
+LANGUAGE=rust
+TASK=mbpp
+BIG_CODE_LANGUAGE=rs
+EXPERIMENT_NAME="experiments-magi-lora";
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
+DATASET=rombodawg/MegaCodeTraining
+EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
+ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false;
+```
+
+
 ~~~
 MODEL_NAME=deepseek-coder-6.7b-base;
 DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
