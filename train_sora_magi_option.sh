@@ -6,7 +6,7 @@ OUTPUT_DIR=$2;
 LANGUAGE=$3;
 JOB_ID=$4;
 MODEL_NAME=$5;
-alpha=${6:-1024};
+SORA_DIR=$6;
 
 peft_lora_r=192 # set by 192 for paper
 peft_lora_alpha=192 # set by 192 for paper
@@ -35,7 +35,7 @@ finetune/finetune_deepseekcoder_sora.py \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \
-    --model_max_length 1024 \
+    --model_max_length 16384 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --evaluation_strategy "no" \
@@ -58,5 +58,10 @@ finetune/finetune_deepseekcoder_sora.py \
 
 #rm -rf ${OUTPUT_PATH}/**/global_step*;
 find "${OUTPUT_PATH}" -type d -name "global_step*" -exec rm -rf {} +
+
+python src/merge_sora.py \
+  --model_name_or_path=$MODEL_PATH \
+  --sora_path=$OUTPUT_PATH/pytorch_model.bin \
+  --output_path=$SORA_DIR;
 
 PING $0 ${LANGUAGE} DONE;

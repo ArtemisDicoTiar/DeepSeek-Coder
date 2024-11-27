@@ -13,16 +13,17 @@ args = parser.parse_args_into_dataclasses()[0]
 
 sora_weights = torch.load(args.sora_path)
 model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).cuda()
+param = next(model.parameters())
 new_weights = {}
 
 A = B = gate = None
 for lora_key, lora_tensor in sora_weights.items():
     if 'lora_A' in lora_key:
-        A = lora_tensor
+        A = lora_tensor.to(param)
     elif 'lora_B' in lora_key:
-        B = lora_tensor
+        B = lora_tensor.to(param)
     elif 'gate' in lora_key:
-        gate = lora_tensor
+        gate = lora_tensor.to(param)
 
     if A is not None and B is not None and gate is not None:
         original_name = lora_key.split('.lora.')[0]
