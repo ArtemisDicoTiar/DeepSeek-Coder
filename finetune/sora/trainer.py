@@ -1,3 +1,5 @@
+from transformers.deepspeed import deepspeed_init
+from transformers.dependency_versions_check import dep_version_check
 from transformers.trainer_seq2seq import Seq2SeqTrainer
 from transformers import Trainer
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
@@ -6,7 +8,7 @@ from torch.utils.data import Dataset
 
 import os
 from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
-import numpy as np 
+import numpy as np
 import time
 import torch
 import collections
@@ -14,6 +16,7 @@ from packaging import version
 from torch.utils.data.dataset import Dataset
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 from transformers.utils import logging
 from transformers.trainer_utils import (
@@ -23,11 +26,10 @@ from transformers.trainer_utils import (
     TrainOutput,
     set_seed,
     get_last_checkpoint,
-    ShardedDDPOption,
     HPSearchBackend,
     EvalPrediction
 )
-from transformers.file_utils import CONFIG_NAME, WEIGHTS_NAME, is_torch_tpu_available, is_sagemaker_mp_enabled
+from transformers.file_utils import CONFIG_NAME, WEIGHTS_NAME, is_sagemaker_mp_enabled
 from transformers.trainer_pt_utils import (
     find_batch_size,
     nested_numpify,
@@ -40,14 +42,8 @@ from transformers.trainer_pt_utils import (
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import IterableDataset
 
-
 if version.parse(torch.__version__) >= version.parse("1.6"):
     from torch.cuda.amp import autocast
-
-if is_torch_tpu_available():
-    import torch_xla.core.xla_model as xm
-    import torch_xla.debug.metrics as met
-    import torch_xla.distributed.parallel_loader as pl
 
 from tqdm.auto import tqdm
 # Integrations must be imported before ML frameworks:
@@ -68,11 +64,11 @@ import math
 import warnings
 
 from transformers.file_utils import is_sagemaker_dp_enabled, is_apex_available
-if is_sagemaker_dp_enabled():
-    import smdistributed.dataparallel.torch.distributed as dist
-    from smdistributed.dataparallel.torch.parallel.distributed import DistributedDataParallel as DDP
-else:
-    import torch.distributed as dist
+# if is_sagemaker_dp_enabled():
+#     import smdistributed.dataparallel.torch.distributed as dist
+#     from smdistributed.dataparallel.torch.parallel.distributed import DistributedDataParallel as DDP
+# else:
+import torch.distributed as dist
 
 if is_apex_available():
     from apex import amp
@@ -83,24 +79,13 @@ if TYPE_CHECKING:
 if is_sagemaker_mp_enabled():
     import smdistributed.modelparallel.torch as smp
 
-    from transformers.trainer_pt_utils import smp_forward_backward, smp_forward_only, smp_gather, smp_nested_concat
-
-from transformers.integrations import is_fairscale_available
-if is_fairscale_available():
-    dep_version_check("fairscale")
-    import fairscale
-    from fairscale.nn.data_parallel import FullyShardedDataParallel as FullyShardedDDP
-    from fairscale.nn.data_parallel import ShardedDataParallel as ShardedDDP
-    from fairscale.nn.wrap import auto_wrap
-    from fairscale.optim import OSS
-    from fairscale.optim.grad_scaler import ShardedGradScaler
+from fairscale.optim import OSS
 
 import sys
 from transformers.optimization import Adafactor, AdamW, get_scheduler
 from .util import compute_trainable_sparse_param
 
-
-GATE_PARAM_NAME= "lora.gate"
+GATE_PARAM_NAME = "lora.gate"
 
 TRAINING_ARGS_NAME = "training_args.bin"
 TRAINER_STATE_NAME = "trainer_state.json"
@@ -110,22 +95,23 @@ SCALER_NAME = "scaler.pt"
 
 logger = logging.get_logger(__name__)
 
+
 class SparseTrainerMixin:
     def __init__(
-        self,
-        sparse_lambda = 0.1,
-        sparse_optimizer = None,
+            self,
+            sparse_lambda=0.1,
+            sparse_optimizer=None,
     ):
         self.sparse_lambda = sparse_lambda
         self.sparse_optimizer, self.sparse_scheduler = sparse_optimizer
-    
+
     def evaluation_loop(
-        self,
-        dataloader: DataLoader,
-        description: str,
-        prediction_loss_only: Optional[bool] = None,
-        ignore_keys: Optional[List[str]] = None,
-        metric_key_prefix: str = "eval",
+            self,
+            dataloader: DataLoader,
+            description: str,
+            prediction_loss_only: Optional[bool] = None,
+            ignore_keys: Optional[List[str]] = None,
+            metric_key_prefix: str = "eval",
     ) -> EvalLoopOutput:
         """
         Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
@@ -138,7 +124,6 @@ class SparseTrainerMixin:
 
         # if eval is called w/o train init deepspeed here
         if args.deepspeed and not self.deepspeed:
-
             # XXX: eval doesn't have `resume_from_checkpoint` arg but we should be able to do eval
             # from the checkpoint eventually
             deepspeed_engine, _, _ = deepspeed_init(
@@ -173,8 +158,8 @@ class SparseTrainerMixin:
         # Do this before wrapping.
         eval_dataset = dataloader.dataset
 
-        if is_torch_tpu_available():
-            dataloader = pl.ParallelLoader(dataloader, [args.device]).per_device_loader(args.device)
+        # if is_torch_tpu_available():
+        #     dataloader = pl.ParallelLoader(dataloader, [args.device]).per_device_loader(args.device)
 
         if args.past_index >= 0:
             self._past = None
@@ -271,7 +256,8 @@ class SparseTrainerMixin:
 
         # Metrics!
         if self.compute_metrics is not None and all_preds is not None and all_labels is not None:
-            metrics = self.compute_metrics(metric_key_prefix, EvalPrediction(predictions=all_preds, label_ids=all_labels))
+            metrics = self.compute_metrics(metric_key_prefix,
+                                           EvalPrediction(predictions=all_preds, label_ids=all_labels))
         else:
             metrics = {}
 
@@ -287,7 +273,7 @@ class SparseTrainerMixin:
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
 
         return EvalLoopOutput(predictions=all_preds, label_ids=all_labels, metrics=metrics, num_samples=num_samples)
-    
+
     def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):
         if self.control.should_log:
             logs: Dict[str, float] = {}
@@ -310,20 +296,25 @@ class SparseTrainerMixin:
         metrics = None
         if self.control.should_evaluate:
             sparse_param, total_param = compute_trainable_sparse_param(self.model)
-            logger.info("********\nlambda=%f\nNumber of trainable full param: %d\nNumber of trainable sparse param: %d, Ratio: %.4f%%\n**********" % (self.sparse_lambda, total_param, sparse_param, sparse_param / total_param * 100))
+            logger.info(
+                "********\nlambda=%f\nNumber of trainable full param: %d\nNumber of trainable sparse param: %d, Ratio: %.4f%%\n**********" % (
+                    self.sparse_lambda, total_param, sparse_param, sparse_param / total_param * 100))
             if isinstance(self.eval_dataset, List):
-                metrics = self.evaluate(eval_dataset=self.eval_dataset[0], ignore_keys=ignore_keys_for_eval, metric_key_prefix="eval")
+                metrics = self.evaluate(eval_dataset=self.eval_dataset[0], ignore_keys=ignore_keys_for_eval,
+                                        metric_key_prefix="eval")
                 self._report_to_hp_search(trial, epoch, metrics)
 
-                train_metrics = self.evaluate(eval_dataset=self.eval_dataset[1], ignore_keys=ignore_keys_for_eval, metric_key_prefix="eval_train")
+                train_metrics = self.evaluate(eval_dataset=self.eval_dataset[1], ignore_keys=ignore_keys_for_eval,
+                                              metric_key_prefix="eval_train")
             else:
-                metrics = self.evaluate(eval_dataset=self.eval_dataset, ignore_keys=ignore_keys_for_eval, metric_key_prefix="eval")
+                metrics = self.evaluate(eval_dataset=self.eval_dataset, ignore_keys=ignore_keys_for_eval,
+                                        metric_key_prefix="eval")
                 self._report_to_hp_search(trial, epoch, metrics)
 
         if self.control.should_save:
             self._save_checkpoint(model, trial, metrics=metrics)
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
-    
+
     def is_main_process(self):
         return self.args.local_rank in [0, -1]
 
@@ -341,11 +332,13 @@ class SparseTrainerMixin:
             print(f"removing {GATE_PARAM_NAME} from standard optimizer")
             optimizer_grouped_parameters = [
                 {
-                    "params": [p for n, p in self.model.named_parameters() if n in decay_parameters and GATE_PARAM_NAME not in n and p.requires_grad],
+                    "params": [p for n, p in self.model.named_parameters() if
+                               n in decay_parameters and GATE_PARAM_NAME not in n and p.requires_grad],
                     "weight_decay": self.args.weight_decay,
                 },
                 {
-                    "params": [p for n, p in self.model.named_parameters() if n not in decay_parameters and GATE_PARAM_NAME not in n and p.requires_grad],
+                    "params": [p for n, p in self.model.named_parameters() if
+                               n not in decay_parameters and GATE_PARAM_NAME not in n and p.requires_grad],
                     "weight_decay": 0.0,
                 },
             ]
@@ -360,14 +353,14 @@ class SparseTrainerMixin:
                     "eps": self.args.adam_epsilon,
                 }
             optimizer_kwargs["lr"] = self.args.learning_rate
-            if self.sharded_ddp == ShardedDDPOption.SIMPLE:
-                self.optimizer = OSS(
-                    params=optimizer_grouped_parameters,
-                    optim=optimizer_cls,
-                    **optimizer_kwargs,
-                )
-            else:
-                self.optimizer = optimizer_cls(optimizer_grouped_parameters, **optimizer_kwargs)
+            # if self.sharded_ddp == ShardedDDPOption.SIMPLE:
+            #     self.optimizer = OSS(
+            #         params=optimizer_grouped_parameters,
+            #         optim=optimizer_cls,
+            #         **optimizer_kwargs,
+            #     )
+            # else:
+            self.optimizer = optimizer_cls(optimizer_grouped_parameters, **optimizer_kwargs)
 
         if is_sagemaker_mp_enabled():
             self.optimizer = smp.DistributedOptimizer(self.optimizer)
@@ -396,24 +389,23 @@ class SparseTrainerMixin:
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
             loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
 
-
         if self.args.train_sparse:
             sparse_loss = 0.0
             p_total = 0
             for n, p in model.named_parameters():
                 if "lora.gate" in n:
                     sparse_loss += torch.sum(torch.abs(p))
-                    p_total += torch.numel(p.data)  
-            loss += self.sparse_lambda * sparse_loss / p_total 
+                    p_total += torch.numel(p.data)
+            loss += self.sparse_lambda * sparse_loss / p_total
 
         return (loss, outputs) if return_outputs else loss
 
     def train(
-        self,
-        resume_from_checkpoint: Optional[Union[str, bool]] = None,
-        trial: Union["optuna.Trial", Dict[str, Any]] = None,
-        ignore_keys_for_eval: Optional[List[str]] = None,
-        **kwargs,
+            self,
+            resume_from_checkpoint: Optional[Union[str, bool]] = None,
+            trial: Union["optuna.Trial", Dict[str, Any]] = None,
+            ignore_keys_for_eval: Optional[List[str]] = None,
+            **kwargs,
     ):
         """
         Main training entry point.
@@ -443,8 +435,8 @@ class SparseTrainerMixin:
 
         # do_train is not a reliable argument, as it might not be set and .train() still called, so
         # the following is a workaround:
-        if (args.fp16_full_eval or args.bf16_full_eval) and not args.do_train:
-            self._move_model_to_device(self.model, args.device)
+        # if (args.fp16_full_eval or args.bf16_full_eval) and not args.do_train:
+        #     self._move_model_to_device(self.model, args.device)
 
         if "model_path" in kwargs:
             resume_from_checkpoint = kwargs.pop("model_path")
@@ -458,6 +450,8 @@ class SparseTrainerMixin:
         # This might change the seed so needs to run first.
         self._hp_search_setup(trial)
 
+        print("debug", "init", self.model.device)
+
         # Model re-init
         model_reloaded = False
         if self.model_init is not None:
@@ -467,6 +461,8 @@ class SparseTrainerMixin:
             model_reloaded = True
             # Reinitializes optimizer and scheduler
             self.optimizer, self.lr_scheduler = None, None
+
+            print("debug", "reload_init seed", self.model.device)
 
         # Load potential model checkpoint
         if isinstance(resume_from_checkpoint, bool) and resume_from_checkpoint:
@@ -507,6 +503,7 @@ class SparseTrainerMixin:
             if self.place_model_on_device:
                 self._move_model_to_device(self.model, args.device)
             self.model_wrapped = self.model
+            print("debug", "model_reloaded", self.model.device)
 
         # Keeping track whether we can can len() on the dataset or not
         train_dataset_is_sized = isinstance(self.train_dataset, collections.abc.Sized)
@@ -552,18 +549,21 @@ class SparseTrainerMixin:
             else:
                 debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
 
-        delay_optimizer_creation = self.sharded_ddp is not None and self.sharded_ddp != ShardedDDPOption.SIMPLE
+        # delay_optimizer_creation = self.sharded_ddp is not None
+        # delay_optimizer_creation = self.sharded_ddp is not None
+        #  and self.sharded_ddp != ShardedDDPOption.SIMPLE
         if args.deepspeed:
-            deepspeed_engine, optimizer, lr_scheduler = deepspeed_init(
-                self, num_training_steps=max_steps, resume_from_checkpoint=resume_from_checkpoint
+            optimizer, lr_scheduler = deepspeed_init(
+                self, num_training_steps=max_steps, inference=False
             )
-            self.model = deepspeed_engine.module
-            self.model_wrapped = deepspeed_engine
-            self.deepspeed = deepspeed_engine
+            # self.model = deepspeed_engine.module
+            # self.model_wrapped = deepspeed_engine
+            # self.deepspeed = deepspeed_engine
             self.optimizer = optimizer
             self.lr_scheduler = lr_scheduler
-        elif not delay_optimizer_creation:
-            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
+            print("debug", "deepspeed init", self.model.device)
+        # elif not delay_optimizer_creation:
+        #     self.create_optimizer_and_scheduler(num_training_steps=max_steps)
 
         self.state = TrainerState()
         self.state.is_hyper_param_search = trial is not None
@@ -578,8 +578,8 @@ class SparseTrainerMixin:
         if model is not self.model:
             self.model_wrapped = model
 
-        if delay_optimizer_creation:
-            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
+        # if delay_optimizer_creation:
+        #     self.create_optimizer_and_scheduler(num_training_steps=max_steps)
 
         # Check if saved optimizer or scheduler states exist
         self._load_optimizer_and_scheduler(resume_from_checkpoint)
@@ -609,7 +609,7 @@ class SparseTrainerMixin:
 
         # Check if continuing training from a checkpoint
         if resume_from_checkpoint is not None and os.path.isfile(
-            os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)
+                os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)
         ):
             self.state = TrainerState.load_from_json(os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
             epochs_trained = self.state.global_step // num_update_steps_per_epoch
@@ -673,11 +673,11 @@ class SparseTrainerMixin:
             elif isinstance(train_dataloader.dataset, IterableDatasetShard):
                 train_dataloader.dataset.set_epoch(epoch)
 
-            if is_torch_tpu_available():
-                parallel_loader = pl.ParallelLoader(train_dataloader, [args.device]).per_device_loader(args.device)
-                epoch_iterator = parallel_loader
-            else:
-                epoch_iterator = train_dataloader
+            # if is_torch_tpu_available():
+            #     parallel_loader = pl.ParallelLoader(train_dataloader, [args.device]).per_device_loader(args.device)
+            #     epoch_iterator = parallel_loader
+            # else:
+            epoch_iterator = train_dataloader
 
             # Reset the past mems state at the beginning of each epoch if necessary.
             if args.past_index >= 0:
@@ -687,6 +687,8 @@ class SparseTrainerMixin:
                 len(epoch_iterator) if train_dataset_is_sized else args.max_steps * args.gradient_accumulation_steps
             )
             self.control = self.callback_handler.on_epoch_begin(args, self.state, self.control)
+
+            print("debug", self.model.device)
 
             step = -1
             for step, inputs in enumerate(epoch_iterator):
@@ -707,9 +709,9 @@ class SparseTrainerMixin:
                     self.control = self.callback_handler.on_step_begin(args, self.state, self.control)
 
                 if (
-                    ((step + 1) % args.gradient_accumulation_steps != 0)
-                    and args.local_rank != -1
-                    and args._no_sync_in_gradient_accumulation
+                        ((step + 1) % args.gradient_accumulation_steps != 0)
+                        and args.local_rank != -1
+                        and args._no_sync_in_gradient_accumulation
                 ):
                     # Avoid unnecessary DDP synchronization since there will be no backward pass on this example.
                     with model.no_sync():
@@ -718,9 +720,9 @@ class SparseTrainerMixin:
                     tr_loss_step = self.training_step(model, inputs)
 
                 if (
-                    args.logging_nan_inf_filter
-                    and not is_torch_tpu_available()
-                    and (torch.isnan(tr_loss_step) or torch.isinf(tr_loss_step))
+                        args.logging_nan_inf_filter
+                        # and not is_torch_tpu_available()
+                        and (torch.isnan(tr_loss_step) or torch.isinf(tr_loss_step))
                 ):
                     # if loss is nan or inf simply add the average of previous logged losses
                     tr_loss += tr_loss / (1 + self.state.global_step - self._globalstep_last_logged)
@@ -729,14 +731,15 @@ class SparseTrainerMixin:
 
                 self.current_flos += float(self.floating_point_ops(inputs))
 
-                # Optimizer step for deepspeed must be called on every step regardless of the value of gradient_accumulation_steps
+                # Optimizer step for deepspeed must be called on every step regardless of the value of
+                # gradient_accumulation_steps
                 if self.deepspeed:
                     self.deepspeed.step()
 
                 if (step + 1) % args.gradient_accumulation_steps == 0 or (
-                    # last step in epoch but step is always smaller than gradient_accumulation_steps
-                    steps_in_epoch <= args.gradient_accumulation_steps
-                    and (step + 1) == steps_in_epoch
+                        # last step in epoch but step is always smaller than gradient_accumulation_steps
+                        steps_in_epoch <= args.gradient_accumulation_steps
+                        and (step + 1) == steps_in_epoch
                 ):
                     # Gradient clipping
                     if args.max_grad_norm is not None and args.max_grad_norm > 0 and not self.deepspeed:
@@ -763,10 +766,10 @@ class SparseTrainerMixin:
                     optimizer_was_run = True
                     if self.deepspeed:
                         pass  # called outside the loop
-                    elif is_torch_tpu_available():
-                        xm.optimizer_step(self.optimizer)
-                        if self.args.train_sparse:
-                            xm.optimizer_step(self.sparse_optimizer)
+                    # elif is_torch_tpu_available():
+                    #     xm.optimizer_step(self.optimizer)
+                    #     if self.args.train_sparse:
+                    #         xm.optimizer_step(self.sparse_optimizer)
 
                     elif self.do_grad_scaling:
                         scale_before = self.scaler.get_scale()
@@ -782,7 +785,7 @@ class SparseTrainerMixin:
                         optimizer_was_run = scale_before <= scale_after
                     else:
                         self.optimizer.step()
-                        
+
                         if self.args.train_sparse:
                             self.sparse_optimizer.step()
 
@@ -790,7 +793,6 @@ class SparseTrainerMixin:
                         self.lr_scheduler.step()
                         if self.args.train_sparse and self.sparse_scheduler is not None:
                             self.sparse_scheduler.step()
-                    
 
                     model.zero_grad()
                     self.state.global_step += 1
@@ -815,15 +817,15 @@ class SparseTrainerMixin:
             self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
             self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
 
-            if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
-                if is_torch_tpu_available():
-                    # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
-                    xm.master_print(met.metrics_report())
-                else:
-                    logger.warning(
-                        "You enabled PyTorch/XLA debug metrics but you don't have a TPU "
-                        "configured. Check your training configuration if this is unexpected."
-                    )
+            # if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
+            # if is_torch_tpu_available():
+            #     # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
+            #     xm.master_print(met.metrics_report())
+            # else:
+            #     logger.warning(
+            #         "You enabled PyTorch/XLA debug metrics but you don't have a TPU "
+            #         "configured. Check your training configuration if this is unexpected."
+            #     )
             if self.control.should_training_stop:
                 break
 
@@ -835,9 +837,9 @@ class SparseTrainerMixin:
         logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
         if args.load_best_model_at_end and self.state.best_model_checkpoint is not None:
             # Wait for everyone to get here so we are sur the model has been saved by process 0.
-            if is_torch_tpu_available():
-                xm.rendezvous("load_best_model_at_end")
-            elif args.local_rank != -1:
+            # if is_torch_tpu_available():
+            #     xm.rendezvous("load_best_model_at_end")
+            if args.local_rank != -1:
                 dist.barrier()
 
             logger.info(
@@ -848,12 +850,14 @@ class SparseTrainerMixin:
             if os.path.exists(best_model_path):
                 if self.deepspeed:
                     # temp hack until Deepspeed fixes the problem with resume from an existing engine that did some stepping
-                    deepspeed_engine, optimizer, lr_scheduler = deepspeed_reinit(self)
-                    self.model = deepspeed_engine.module
-                    self.model_wrapped = deepspeed_engine
-                    self.deepspeed = deepspeed_engine
-                    self.optimizer = optimizer
-                    self.lr_scheduler = lr_scheduler
+                    # deepspeed_engine, optimizer, lr_scheduler = deepspeed_reinit(self)
+                    # self.model = deepspeed_engine.module
+                    # self.model_wrapped = deepspeed_engine
+                    # self.deepspeed = deepspeed_engine
+                    # self.optimizer = optimizer
+                    # self.lr_scheduler = lr_scheduler
+                    self.model_wrapped = self.model
+                    self.deepspeed = None
                     self.deepspeed.load_checkpoint(
                         self.state.best_model_checkpoint, load_optimizer_states=True, load_lr_scheduler_states=True
                     )
@@ -890,10 +894,10 @@ class SparseTrainerMixin:
 
 class SparseSeq2SeqTrainer(SparseTrainerMixin, Seq2SeqTrainer):
     def __init__(
-        self,
-        sparse_lambda = 0.1,
-        sparse_optimizer = None,
-        **kwargs
+            self,
+            sparse_lambda=0.1,
+            sparse_optimizer=None,
+            **kwargs
     ):
         Seq2SeqTrainer.__init__(self, **kwargs)
         SparseTrainerMixin.__init__(self, sparse_lambda=sparse_lambda, sparse_optimizer=sparse_optimizer)
@@ -903,10 +907,10 @@ class SparseSeq2SeqTrainer(SparseTrainerMixin, Seq2SeqTrainer):
 
 class SparseTrainer(SparseTrainerMixin, Trainer):
     def __init__(
-        self,
-        sparse_lambda = 0.1,
-        sparse_optimizer = None,
-        **kwargs
+            self,
+            sparse_lambda=0.1,
+            sparse_optimizer=None,
+            **kwargs
     ):
         Trainer.__init__(self, **kwargs)
         SparseTrainerMixin.__init__(self, sparse_lambda=sparse_lambda, sparse_optimizer=sparse_optimizer)
