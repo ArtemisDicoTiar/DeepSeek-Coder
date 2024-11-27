@@ -743,9 +743,6 @@ class SparseTrainerMixin:
                 for _ in train_dataloader:
                     break
 
-        for n, p in model.named_parameters():
-            print(n, p.requires_grad)
-
         total_batched_samples = 0
         for epoch in range(epochs_trained, num_train_epochs):
             epoch_iterator = train_dataloader
