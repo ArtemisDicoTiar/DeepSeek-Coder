@@ -1,7 +1,7 @@
 ```bash
 LANGUAGE=java;
 BIG_CODE_LANGUAGE=java;
-EXPERIMENT_NAME="experiments-magi-lora-plex";
+EXPERIMENT_NAME="experiments";
 MODEL_NAME=deepseek-coder-6.7b-base;
 EXPERIMENT_DIR=deepseek-ai/deepseek-coder-6.7b-base;
 ts --gpus 2 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} humaneval baseline ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
@@ -39,9 +39,9 @@ m-a-p/CodeFeedback-Filtered-Instruction
 # MAIN LANGS=(java php cpp swift) 
 # NEW LANGS=(go rust scala python)
 #SUBMIT_LANGUAGES=(java php cpp swift go rust scala python);
-SUBMIT_LANGUAGES=(cpp java);
+SUBMIT_LANGUAGES=(java php cpp swift);
 TARGET_TASKS=(humaneval mbpp);
-EXPERIMENT_NAME="experiments-magi-lora-plex-e";
+EXPERIMENT_NAME="experiments-magi-ptuning";
 MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
 DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
 for TASK in ${TARGET_TASKS[@]}; do
