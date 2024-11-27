@@ -24,20 +24,20 @@ RUN_GPU_IDS=${CUDA_VISIBLE_DEVICES:-1}
 echo "RUNNING ON GPU: $RUN_GPU_IDS"
 unset CUDA_VISIBLE_DEVICES
 
-#deepspeed \
-#    --include localhost:${RUN_GPU_IDS} \
-#    --master_port ${JOB_PORT} \
-#    --deepspeed finetune/configs/ds_config_zero1_magi_no_optim.json \
-python3 \
+
+#python3 \
+deepspeed \
+    --include localhost:${RUN_GPU_IDS} \
+    --master_port ${JOB_PORT} \
 finetune/finetune_deepseekcoder_sora.py \
+    --deepspeed finetune/configs/ds_config_zero1_magi_no_optim.json \
     --model_name_or_path $MODEL_PATH \
     --data_path $DATA_PATH \
     --output_dir $OUTPUT_PATH \
     --num_train_epochs 2 \
-    --model_max_length 16384 \
+    --model_max_length 1024 \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 8 \
     --evaluation_strategy "no" \
     --save_strategy "epoch" \
     --save_steps 100 \
@@ -45,7 +45,7 @@ finetune/finetune_deepseekcoder_sora.py \
     --learning_rate 15e-6 \
     --logging_steps 1 \
     --lr_scheduler_type "linear" \
-    --gradient_checkpointing True \
+    --gradient_checkpointing False \
     --report_to "wandb" \
     --max_grad_norm 0.1 \
     --warmup_ratio 0.06 \

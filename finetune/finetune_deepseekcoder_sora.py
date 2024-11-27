@@ -46,6 +46,13 @@ class TrainingArguments(transformers.TrainingArguments):
         metadata={"help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."},
     )
 
+    train_sparse: Optional[bool] = field(
+        default=False, metadata={"help": "whether use sparse lora"}
+    )
+    debug_mode: Optional[bool] = field(
+        default=False, metadata={"help": "debug mode"}
+    )
+
 
 @dataclass
 class SparseArguments:
@@ -78,12 +85,7 @@ class SparseArguments:
 
 @dataclass
 class SparseTrainingArguments:
-    train_sparse: Optional[bool] = field(
-        default=False, metadata={"help": "whether use sparse lora"}
-    )
-    debug_mode: Optional[bool] = field(
-        default=False, metadata={"help": "debug mode"}
-    )
+    pass
 
 
 def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str):
@@ -174,7 +176,7 @@ def train():
     model_args, data_args, training_args, sparse_training_args, sparse_args = parser.parse_args_into_dataclasses()
 
     # ============ sora ============ #
-    if sparse_training_args.train_sparse:
+    if training_args.train_sparse:
         if sparse_args.sparse_lr is None:
             sparse_args.sparse_lr = sparse_training_args.learning_rate
 
@@ -207,7 +209,7 @@ def train():
         torch_dtype=torch.bfloat16
     )
 
-    if sparse_training_args.train_sparse:
+    if training_args.train_sparse:
         print("loading from src.lora")
         from sora.lora import LoraModel, LoraConfig
     else:
@@ -266,7 +268,7 @@ def train():
         training_args.num_train_epochs * (len(train_dataset) / training_args.train_batch_size)))
     sparse_optimizer = None
     sparse_scheduler = None
-    if sparse_training_args.train_sparse:
+    if training_args.train_sparse:
         print("building sparse optimizer and scheduler")
 
         valid_param_name = []
