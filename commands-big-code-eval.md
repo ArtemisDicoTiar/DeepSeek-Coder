@@ -28,6 +28,9 @@ ts --gpus 2 sh ./evaluate.sh rust rs mbpp baseline deepseek-ai/deepseek-coder-6.
 ts --gpus 2 sh ./evaluate.sh scala scala humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
 ts --gpus 2 sh ./evaluate.sh scala scala mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
+ts --gpus 4 sh ./evaluate.sh r r humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts --gpus 4 sh ./evaluate.sh r r mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
+
 
 ise-uiuc/Magicoder-OSS-Instruct-75K;
 ise-uiuc/Magicoder-Evol-Instruct-110K

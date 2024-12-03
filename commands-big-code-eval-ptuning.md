@@ -16,7 +16,7 @@ ts --gpus 2 sh ./evaluate.sh cpp cpp mbpp baseline deepseek-ai/deepseek-coder-6.
 ts --gpus 2 sh ./evaluate.sh php php humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
 ts --gpus 2 sh ./evaluate.sh php php mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
-ts --gpus 2 sh ./evaluate.sh swift swift humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
+ts --gpus 2 sh ./evaluate.sh swㅅift swift humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
 ts --gpus 2 sh ./evaluate.sh swift swift mbpp baseline deepseek-ai/deepseek-coder-6.7b-base;
 
 ts --gpus 2 sh ./evaluate.sh go go humaneval baseline deepseek-ai/deepseek-coder-6.7b-base;
@@ -54,10 +54,11 @@ for TASK in ${TARGET_TASKS[@]}; do
         BIG_CODE_LANGUAGE=$LANGUAGE
     fi
     EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
-    ts --gpus 4 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} false true;
+    ts --gpus 8 sh ./evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false true;
   done;
 done;
 ```
+
 
 ```bash
 LANGUAGE=rust
@@ -107,3 +108,25 @@ done;
 sleep 1800;
 done;
 ~~~
+
+
+```bash
+SUBMIT_LANGUAGES=(php);
+TARGET_TASKS=(humaneval mbpp);
+EXPERIMENT_NAME="experiments-magi-ptuning";
+MODEL_NAME=deepseek-ai/deepseek-coder-6.7b-base;
+DATASET=ise-uiuc/Magicoder-OSS-Instruct-75K;
+for TASK in ${TARGET_TASKS[@]}; do
+  for LANGUAGE in ${SUBMIT_LANGUAGES[@]}; do
+    if [ $LANGUAGE = "rust" ]; then
+        BIG_CODE_LANGUAGE=rs
+    elif [ $LANGUAGE = "python" ]; then
+        BIG_CODE_LANGUAGE=py
+    else
+        BIG_CODE_LANGUAGE=$LANGUAGE
+    fi
+    EXPERIMENT_DIR=/workspace/DeepSeek-Coder/${EXPERIMENT_NAME}/${MODEL_NAME}/${DATASET}/${LANGUAGE};
+    ts sh ./only_evaluate.sh ${LANGUAGE} ${BIG_CODE_LANGUAGE} ${TASK} ${DATASET}/results ${EXPERIMENT_DIR} ${MODEL_NAME} ${EXPERIMENT_NAME} true false true;
+  done;
+done;
+```
